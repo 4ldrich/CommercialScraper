@@ -40,9 +40,7 @@ class Scraper:
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
         sleep(2)
-        cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
-        cookie_button.click()
-        sleep(0.5)
+        self._cookie_check_and_click()
 
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
@@ -59,6 +57,8 @@ class Scraper:
             raise ValueError('Max amount of headers on Airbnb\'s website is 25')
         if count < 1:
             raise ValueError('Count must be a positive integer greater than 1')
+
+        self._cookie_check_and_click()
 
         # START of the headr yield code. This uses seleniums webdriver
         # to both click through and catch the header names and urls of each of the
@@ -117,6 +117,8 @@ class Scraper:
 
     def _get_products(self, header_url, SCROLLING = True):
         self.driver.get(header_url)
+        sleep(0.5)
+        self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(3)
 
@@ -154,6 +156,27 @@ class Scraper:
                     self.product_links = np.append(self.product_links,url)
             except:
                 pass
+
+
+    
+
+    def __is_cookie_button_present(self):
+        for i in range(10):
+            try:
+                return self.driver.find_element_by_class_name("_1xiwgrva") is not None
+            except:
+                pass
+        return False
+
+
+
+    def _cookie_check_and_click(self):
+        if self.__is_cookie_button_present():
+            cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
+            cookie_button.click()
+            sleep(0.5)
+        else:
+            return
 
 
     @staticmethod 
@@ -222,6 +245,8 @@ class Scraper:
         Returns:
             xxx
         '''
+        self._cookie_check_and_click()
+
         # Initialising default dict and adding the passed ID and 
         # category parameters
         product_dict = dict()
@@ -342,7 +367,6 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    scraper.scrape_all(sample=False)
 
 
 if __name__ == '__main__':

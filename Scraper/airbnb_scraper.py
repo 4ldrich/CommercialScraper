@@ -158,9 +158,10 @@ class Scraper:
                 pass
 
 
-    
 
     def __is_cookie_button_present(self):
+        # Returns true if cookie button is present, otherwise False
+        # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
                 return self.driver.find_element_by_class_name("_1xiwgrva") is not None
@@ -171,6 +172,9 @@ class Scraper:
 
 
     def _cookie_check_and_click(self):
+        # Checks if a cookie button is present using the method __is_cookie_button_present()
+        # if there is one present, selenium driver will find and click it, else nothing happens
+        # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
             cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
             cookie_button.click()

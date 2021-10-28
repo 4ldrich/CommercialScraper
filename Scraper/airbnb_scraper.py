@@ -10,6 +10,8 @@ import pandas as pd
 from time import sleep
 import time
 
+look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
+
 class Scraper:
     '''
     SUMMARY OF THE SCRAPER.
@@ -84,7 +86,7 @@ class Scraper:
                 counted +=1
                 # Break the entire function if count is met
                 if counted == count:
-                    return
+                    return 
             sleep(1)
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
@@ -113,6 +115,7 @@ class Scraper:
                     # Break the entire function if count is met
                     if counted == count:
                         return
+                    
  
 
     def _get_products(self, header_url, SCROLLING = True):
@@ -259,7 +262,7 @@ class Scraper:
 
         # Getting the product page and parsing the html into bs4
         self.driver.get(product_url)
-        sleep(1.5)
+        sleep(2.5)
         homePage_html = self.driver.find_element_by_xpath('//*')
         homePage_html = homePage_html.get_attribute('innerHTML')
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
@@ -314,7 +317,12 @@ class Scraper:
 
                 # Product URL (str)
                 product_dict['url'] = product_url
-                break
+
+                if  product_dict['title'] is None \
+                    and product_dict['Location'] is None:
+                    raise ValueError
+                else:
+                    break
             
             except:
                 continue
@@ -332,7 +340,6 @@ class Scraper:
         '''
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
-        MISSING_DATA = 0
         self.df = pd.DataFrame()
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
@@ -359,10 +366,10 @@ class Scraper:
                         product = self.scrape_product(prod_url, ID, self.categories[category_no])
                         self.df = self.df.append(product, ignore_index=True)
                         ID+=1
-                    except:
+                    except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
-                        MISSING_DATA +=1
                         ID += 1
+                        print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
             self.df.to_csv(filename, index=False)

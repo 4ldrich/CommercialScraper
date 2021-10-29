@@ -271,6 +271,8 @@ class Scraper:
         # to allow for errors due to elements not being loaded yet
         for i in range(self.BATCH_ATTEMPTS):
             try:
+                product_dict['url'] = None
+
                 # Product title (str)
                 title = homePage_soup.find('h1').text
                 product_dict['Title'] = title
@@ -318,9 +320,12 @@ class Scraper:
                 # Product URL (str)
                 product_dict['url'] = product_url
 
-                if  product_dict['title'] is None \
-                    and product_dict['Location'] is None\
-                    and product_dict['guests'] is None:
+                # TODO: make this fix the 'not loaded in time' bug
+                if  product_dict['Title'] == None \
+                    or product_dict['Location'] == None\
+                    or product_dict['url'] == None:
+                    sleep(34)
+                    print('test')
                     raise ValueError
                 else:
                     break

@@ -1,8 +1,12 @@
 
-dic = dict()
 
+for i in range(10):
+    x = 5
+    try:
+        if x == 5:
+            raise ValueError
+        print(5 + x)
+    except:
+        continue
 
-
-dic['empty'] = None
-
-print(dic['empty'] is None)
+print('DONE')

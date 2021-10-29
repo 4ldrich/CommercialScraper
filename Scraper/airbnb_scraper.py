@@ -198,7 +198,7 @@ class Scraper:
             # ['x guests', 'x bedrooms', 'x beds', 'x bathrooms']
             # this is much easier to be iterated over and parsed
             text = text.replace('·', '')
-            text = text.split(',')
+            text = text.split('  ')
             clean_info = []
             for i in text:
                 clean_info.append(i.strip())
@@ -262,7 +262,7 @@ class Scraper:
 
         # Getting the product page and parsing the html into bs4
         self.driver.get(product_url)
-        sleep(2.5)
+        sleep(3)
         homePage_html = self.driver.find_element_by_xpath('//*')
         homePage_html = homePage_html.get_attribute('innerHTML')
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
@@ -319,7 +319,8 @@ class Scraper:
                 product_dict['url'] = product_url
 
                 if  product_dict['title'] is None \
-                    and product_dict['Location'] is None:
+                    and product_dict['Location'] is None\
+                    and product_dict['guests'] is None:
                     raise ValueError
                 else:
                     break
@@ -377,7 +378,10 @@ class Scraper:
 
 
 def main():
+    url = 'https://www.airbnb.co.uk/rooms/44348903?category_tag=Tag%3A8186&adults=1&check_in=2021-12-05&check_out=2021-12-12&federated_search_id=618539e0-afb8-493f-a2a7-7ed50fe6b03e&source_impression_id=p3_1635541939_wWiOep%2BMrHxVhk1a&guests=1'
     scraper = Scraper()
+    product = scraper.scrape_product(url,1000,'test')
+    print(product)
 
 
 if __name__ == '__main__':

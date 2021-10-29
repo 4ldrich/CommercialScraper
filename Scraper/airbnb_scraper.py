@@ -262,16 +262,14 @@ class Scraper:
 
         # Getting the product page and parsing the html into bs4
         self.driver.get(product_url)
-        sleep(3)
-        homePage_html = self.driver.find_element_by_xpath('//*')
-        homePage_html = homePage_html.get_attribute('innerHTML')
-        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
 
         # Getting data from page. Looped through multiple attempts 
         # to allow for errors due to elements not being loaded yet
         for i in range(self.BATCH_ATTEMPTS):
+            homePage_html = self.driver.find_element_by_xpath('//*')
+            homePage_html = homePage_html.get_attribute('innerHTML')
+            homePage_soup = BeautifulSoup(homePage_html, 'lxml')
             try:
-                product_dict['url'] = None
 
                 # Product title (str)
                 title = homePage_soup.find('h1').text
@@ -320,17 +318,18 @@ class Scraper:
                 # Product URL (str)
                 product_dict['url'] = product_url
 
-                # TODO: make this fix the 'not loaded in time' bug
+                # Catches if html hasn't been parsed properly due to loading lag, and re-runs the loop
                 if  product_dict['Title'] == None \
                     or product_dict['Location'] == None\
                     or product_dict['url'] == None:
-                    sleep(34)
                     print('test')
+                    sleep(0.1)
                     raise ValueError
                 else:
                     break
             
             except:
+                sleep(0.25)
                 continue
         
         return product_dict

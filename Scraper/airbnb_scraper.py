@@ -2,13 +2,13 @@
 Module description HERE
 
 '''
-
+import urllib.request
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-import time
+import os
 
 
 # TODO: Private bathroom! Need to parse this
@@ -34,6 +34,11 @@ class Scraper:
         '''
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
+
+        # Making destination paths for data to be stored
+        os.mkdir('data')
+        os.mkdir('data/alphanumeric')
+        os.mkdir('data/images')
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -380,14 +385,13 @@ class Scraper:
                         print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
-            self.df.to_csv(filename, index=False)
+            self.df.to_csv('data/alphanumeric/' + filename, index=False)
 
 
 
 def main():
-    testurl = 'https://www.airbnb.co.uk/rooms/50328285?_set_bev_on_new_domain=1635549222_ZTBiYTI4Zjk5Nzc3&source_impression_id=p3_1635549223_zpDx5u44aOBcaV1p&guests=1&adults=1'
     scraper = Scraper()
-    scraper.scrape_all(sample=True)
+    scraper.scrape_all(sample = True)
     
 
 if __name__ == '__main__':
@@ -397,6 +401,7 @@ if __name__ == '__main__':
 ###############################################################
 # TO DO LIST:
     # Does this need any magic functions? Any more class/static functions?
+    # Get images
     # Proxy to get round the 'too many requests'
     # Is it possible to make this faster?? Threading?
     # Docstring everything properly. Look at online examples

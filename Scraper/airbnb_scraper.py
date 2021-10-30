@@ -10,6 +10,8 @@ import pandas as pd
 from time import sleep
 import time
 
+
+# TODO: Private bathroom! Need to parse this
 look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
 
 class Scraper:
@@ -302,6 +304,7 @@ class Scraper:
 
                 # Sub ratings (list of floats)
                 subratings_container = homePage_soup.find('div', class_= 'ciubx2o dir dir-ltr')
+
                 subratings = subratings_container.findChildren('div', recursive = False)
                 for subrating in subratings:
                     if subrating.div.div.div.text:
@@ -382,11 +385,10 @@ class Scraper:
 
 
 def main():
-    url = 'https://www.airbnb.co.uk/rooms/44348903?category_tag=Tag%3A8186&adults=1&check_in=2021-12-05&check_out=2021-12-12&federated_search_id=618539e0-afb8-493f-a2a7-7ed50fe6b03e&source_impression_id=p3_1635541939_wWiOep%2BMrHxVhk1a&guests=1'
+    testurl = 'https://www.airbnb.co.uk/rooms/50328285?_set_bev_on_new_domain=1635549222_ZTBiYTI4Zjk5Nzc3&source_impression_id=p3_1635549223_zpDx5u44aOBcaV1p&guests=1&adults=1'
     scraper = Scraper()
-    product = scraper.scrape_product(url,1000,'test')
-    print(product)
-
+    scraper.scrape_all(sample=True)
+    
 
 if __name__ == '__main__':
     main()

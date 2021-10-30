@@ -248,7 +248,7 @@ class Scraper:
             raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
     
 
-    def scrape_product(self, product_url, ID, category):
+    def scrape_product_data(self, product_url, ID, category):
         '''
         This function scrapes all relevant information from a single Airbnb
         product page. 
@@ -342,6 +342,11 @@ class Scraper:
         
         return product_dict
 
+    #TODO: make function that gets images and dumps them in 'data/images' in an organised fashion
+    # endure that primary key matches the corresponding entry
+    def scrape_product_images(self, product_url, ID, category):
+        pass
+
 
     def scrape_all(self, sample = False):
         '''
@@ -376,7 +381,7 @@ class Scraper:
                 for prod_url in self.product_links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product = self.scrape_product(prod_url, ID, self.categories[category_no])
+                        product = self.scrape_product_data(prod_url, ID, self.categories[category_no])
                         self.df = self.df.append(product, ignore_index=True)
                         ID+=1
                     except Exception as e:

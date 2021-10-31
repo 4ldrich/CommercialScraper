@@ -2,13 +2,17 @@
 Module description HERE
 
 '''
-
+import urllib.request
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-import time
+import os
+
+
+# TODO: Private bathroom! Need to parse this
+look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
 
 class Scraper:
     '''
@@ -31,6 +35,11 @@ class Scraper:
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
 
+        # Making destination paths for data to be stored
+        os.mkdir('data')
+        os.mkdir('data/alphanumeric')
+        os.mkdir('data/images')
+
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -40,9 +49,7 @@ class Scraper:
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
         sleep(2)
-        cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
-        cookie_button.click()
-        sleep(0.5)
+        self._cookie_check_and_click()
 
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
@@ -60,6 +67,8 @@ class Scraper:
         if count < 1:
             raise ValueError('Count must be a positive integer greater than 1')
 
+        self._cookie_check_and_click()
+
         # START of the headr yield code. This uses seleniums webdriver
         # to both click through and catch the header names and urls of each of the
         # 25 headers. BS4 cannot get their hrefs easily because they're 'buttons' on the site!
@@ -68,23 +77,24 @@ class Scraper:
 
         # First, get the text for the headers up to the 'more'. (Not all headers are visible immediately)
         # if the count is lower than current visible headers, this is sliced at the bottom
-        self.categories = []
-        self.category_links = []
+        categories = []
+        category_links = []
         for header in headers:
-            self.categories.append(header.text)
-        self.categories.remove('More')
-        self.categories = self.categories[:count]
+            categories.append(header.text)
+        categories.remove('More')
+        categories = categories[:count]
 
         # Click through the visible headers to get urls for each one (except for 'More')
         counted = 0
         for i in range(len(headers)):
             headers[i].click()
             if i!= len(headers) - 1:
-                self.category_links.append(self.driver.current_url)
+                category_links.append(self.driver.current_url)
                 counted +=1
                 # Break the entire function if count is met
                 if counted == count:
-                    return self.category_links, self.categories
+                    return zip(categories, category_links)
+
             sleep(1)
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
@@ -103,20 +113,21 @@ class Scraper:
                     more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
                     sleep(0.5)
                     # Get the category name from header
-                    self.categories.append(more_headers[j].text)
+                    categories.append(more_headers[j].text)
                     more_headers[j].click()
                     sleep(0.5)
                     # After clicking that header, get the corresponding header url for it
-                    self.category_links.append(self.driver.current_url)
+                    category_links.append(self.driver.current_url)
                     headers[i].click()
                     counted+=1
                     # Break the entire function if count is met
                     if counted == count:
-                        return self.category_links, self.categories
- 
-
+                        return zip(categories, category_links)
+                    
     def _get_products(self, header_url, SCROLLING = True):
         self.driver.get(header_url)
+        sleep(0.5)
+        self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(3)
 
@@ -156,6 +167,31 @@ class Scraper:
                 pass
 
 
+
+    def __is_cookie_button_present(self):
+        # Returns true if cookie button is present, otherwise False
+        # Used as boolean logic for _cookie_check_and_click()
+        for i in range(10):
+            try:
+                return self.driver.find_element_by_class_name("_1xiwgrva") is not None
+            except:
+                pass
+        return False
+
+
+
+    def _cookie_check_and_click(self):
+        # Checks if a cookie button is present using the method __is_cookie_button_present()
+        # if there is one present, selenium driver will find and click it, else nothing happens
+        # (no error can be thrown either way, and this covers the base of possible cookie problems)
+        if self.__is_cookie_button_present():
+            cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
+            cookie_button.click()
+            sleep(0.5)
+        else:
+            return
+
+
     @staticmethod 
     def string_clean(text: str, str_type) -> str:
         '''
@@ -168,17 +204,17 @@ class Scraper:
             # ['x guests', 'x bedrooms', 'x beds', 'x bathrooms']
             # this is much easier to be iterated over and parsed
             text = text.replace('·', '')
-            text = text.split(',')
+            text = text.split('  ')
             clean_info = []
             for i in text:
-                clean_info.append(i.strip())
+                clean_info.append(i)
             
             for val in clean_info:
                 label = val.split()[1]
                 # unlikely to happen, but if theres an anomaly in the site text, 
                 # the certain element is ignored and this doesn't mess up the data
                 if label not in ['guests', 'guest', 'bedrooms', 'bedroom',
-                    'beds', 'bed', 'bathrooms' ,'bathroom']:
+                    'beds', 'bed', 'bathrooms' ,'bathroom', 'private bathroom']:
                     pass
 
                 
@@ -209,9 +245,30 @@ class Scraper:
 
         else:
             raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
-    
 
-    def scrape_product(self, product_url, ID, category):
+ 
+
+    def __scrape_product_images(self, driver, ID):
+        os.mkdir('data/images/'+ str(ID))
+
+
+        sleep(0.33)
+        homePage_html = driver.find_element_by_xpath('//*')
+        homePage_html = homePage_html.get_attribute('innerHTML')
+        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+        images = homePage_soup.find_all('img', class_='_6tbg2q')
+
+        if images is None:
+            raise Exception
+
+        char_no = 97
+        for image in images:
+            image_src = image['src']
+            urllib.request.urlretrieve(image_src,'data/images/' + str(ID) + '/' + str(ID) + chr(char_no) + '.png')
+            char_no +=1
+
+
+    def scrape_product_data(self, product_url, ID, category):
         '''
         This function scrapes all relevant information from a single Airbnb
         product page. 
@@ -222,6 +279,8 @@ class Scraper:
         Returns:
             xxx
         '''
+        self._cookie_check_and_click()
+
         # Initialising default dict and adding the passed ID and 
         # category parameters
         product_dict = dict()
@@ -230,64 +289,145 @@ class Scraper:
 
         # Getting the product page and parsing the html into bs4
         self.driver.get(product_url)
-        sleep(1.5)
-        homePage_html = self.driver.find_element_by_xpath('//*')
-        homePage_html = homePage_html.get_attribute('innerHTML')
-        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+        sleep(0.33)
+
+        for i in range(self.BATCH_ATTEMPTS):
+            try:
+                self.__scrape_product_images(self.driver, ID)
+                break
+            except:
+                continue
+
 
         # Getting data from page. Looped through multiple attempts 
         # to allow for errors due to elements not being loaded yet
-        for i in range(self.BATCH_ATTEMPTS):
+        for j in range(self.BATCH_ATTEMPTS):
             try:
+
                 # Product title (str)
-                title = homePage_soup.find('h1').text
-                product_dict['Title'] = title
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        title = homePage_soup.find('h1').text
+                        product_dict['Title'] = title
+                        break
+                    except:
+                        continue
 
                 # Product Locaton (str)
-                location = homePage_soup.find('span', {'class': '_pbq7fmm'}).text.replace(',', '')
-                product_dict['Location'] = location
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        location = homePage_soup.find('span', {'class': '_pbq7fmm'}).text.replace(',', '')
+                        product_dict['Location'] = location
+                        break
+                    except:
+                        continue
 
                 # Counts for beds, bedrooms, beds and bathrooms (all int)
-                info = self.string_clean(
-                    homePage_soup.find('div', {'class': '_xcsyj0'}).next_sibling.text, 
-                    str_type = 'info')
-                for val in info:
-                    product_dict[val[0]] = val[1]
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        info = self.string_clean(
+                            homePage_soup.find('div', {'class': '_xcsyj0'}).next_sibling.text, 
+                            str_type = 'info')
+                        for val in info:
+                            product_dict[val[0]] = val[1]
+                        break
+                    except:
+                        continue
 
                 # Number of Reviews (int)
-                review_count = self.string_clean(
-                    homePage_soup.find('span', {'class': '_142pbzop'}).text, 
-                    str_type = 'review count') 
-                product_dict['Review_Count'] = review_count
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        review_count = self.string_clean(
+                            homePage_soup.find('span', {'class': '_142pbzop'}).text, 
+                            str_type = 'review count') 
+                        product_dict['Review_Count'] = review_count
+                        break
+                    except:
+                        continue
 
                 # Overall star rating (float)
-                overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
-                product_dict['Overall Rate'] = overall_rating
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
+                        product_dict['Overall_Rate'] = overall_rating
+                        break
+                    except:
+                        continue
 
                 # Price per night (float)
-                price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
-                product_dict['Price (Night)'] = price_pNight
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
+                        product_dict['Price_Night'] = price_pNight
+                        break
+                    except:
+                        continue
 
                 # Sub ratings (list of floats)
-                subratings_container = homePage_soup.find('div', class_= 'ciubx2o dir dir-ltr')
-                subratings = subratings_container.findChildren('div', recursive = False)
-                for subrating in subratings:
-                    if subrating.div.div.div.text:
-                        product_dict[subrating.div.div.div.text + '_rate'] = \
-                            subrating.div.div.div.nextSibling.text
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        subratings_container = homePage_soup.find('div', class_= 'ciubx2o dir dir-ltr')
+
+                        subratings = subratings_container.findChildren('div', recursive = False)
+                        for subrating in subratings:
+                            if subrating.div.div.div.text:
+                                product_dict[subrating.div.div.div.text + '_rate'] = \
+                                    subrating.div.div.div.nextSibling.text
+                        break
+                    except:
+                        continue
 
                 # How many amneties each location has (int)
-                amenities_container = homePage_soup.find('div', class_ = 'b6xigss dir dir-ltr')
-                amenities_count = self.string_clean(
-                    amenities_container.a.text, 
-                    str_type='amenities')
-                product_dict['amenities_count'] = amenities_count
+                for i in range(self.BATCH_ATTEMPTS):
+                    try:
+                        homePage_html = self.driver.find_element_by_xpath('//*')
+                        homePage_html = homePage_html.get_attribute('innerHTML')
+                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        amenities_container = homePage_soup.find('div', class_ = 'b6xigss dir dir-ltr')
+                        amenities_count = self.string_clean(
+                            amenities_container.a.text, 
+                            str_type='amenities')
+                        product_dict['amenities_count'] = amenities_count
+                        break
+                    except:
+                        continue
 
                 # Product URL (str)
                 product_dict['url'] = product_url
-                break
+
+                # Catches if html hasn't been parsed properly due to loading lag, and re-runs the loop
+                if  product_dict['Title'] == None \
+                    or product_dict['Location'] == None\
+                    or product_dict['url'] == None:
+                    print('test')
+                    sleep(0.1)
+                    raise ValueError
+                else:
+                    break
             
             except:
+                sleep(0.25)
                 continue
         
         return product_dict
@@ -303,47 +443,45 @@ class Scraper:
         '''
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
-        MISSING_DATA = 0
         self.df = pd.DataFrame()
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
-        to_count = 3 if sample else 25
+        to_count = 2 if sample else 25
         filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
-            # First, self.category_links and self.categories are populated by calling _get_categories()
-            # with count parameter set to 3 if sample, else it is set to 25 (i.e. all)
-            self._get_categories(count = to_count)
+            # Getting the zipped object of header names and urls
+            categories = self._get_categories(count = to_count)
 
             # Iterating through each category yielded
-            for category_no in range(len(self.categories)):
+            for header, link in categories:
                 # All product links are gathered into self.product_links. 
                 # When a new category is iterated, self.product_links is reassigned with the new products 
                 # For a sample, scrolling is locked so only top 20 products are accounted for
-                self._get_products(self.category_links[category_no], SCROLLING=scroll)
+                self._get_products(link, SCROLLING=scroll)
 
                 # Iterating over each product url in a category
                 for prod_url in self.product_links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product = self.scrape_product(prod_url, ID, self.categories[category_no])
+                        product = self.scrape_product_data(prod_url, ID, header)
                         self.df = self.df.append(product, ignore_index=True)
                         ID+=1
-                    except:
+                    except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
-                        MISSING_DATA +=1
                         ID += 1
+                        print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
-            self.df.to_csv(filename, index=False)
+            self.df.to_csv('data/alphanumeric/' + filename, index=False)
 
 
 
 def main():
     scraper = Scraper()
-    scraper.scrape_all(sample=False)
-
+    scraper.scrape_all(sample = True)
+    
 
 if __name__ == '__main__':
     main()
@@ -352,7 +490,6 @@ if __name__ == '__main__':
 ###############################################################
 # TO DO LIST:
     # Does this need any magic functions? Any more class/static functions?
-    # Proxy to get round the 'too many requests'
     # Is it possible to make this faster?? Threading?
     # Docstring everything properly. Look at online examples
     # Make Test Files etc

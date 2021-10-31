@@ -207,14 +207,14 @@ class Scraper:
             text = text.split('  ')
             clean_info = []
             for i in text:
-                clean_info.append(i.strip())
+                clean_info.append(i)
             
             for val in clean_info:
                 label = val.split()[1]
                 # unlikely to happen, but if theres an anomaly in the site text, 
                 # the certain element is ignored and this doesn't mess up the data
                 if label not in ['guests', 'guest', 'bedrooms', 'bedroom',
-                    'beds', 'bed', 'bathrooms' ,'bathroom']:
+                    'beds', 'bed', 'bathrooms' ,'bathroom', 'private bathroom']:
                     pass
 
                 
@@ -364,7 +364,7 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
-                        product_dict['Overall Rate'] = overall_rating
+                        product_dict['Overall_Rate'] = overall_rating
                         break
                     except:
                         continue
@@ -376,7 +376,7 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
-                        product_dict['Price (Night)'] = price_pNight
+                        product_dict['Price_Night'] = price_pNight
                         break
                     except:
                         continue
@@ -479,9 +479,8 @@ class Scraper:
 
 
 def main():
-    test = 'https://www.airbnb.co.uk/rooms/50559740?_set_bev_on_new_domain=1633875005_MTAxMTlhOGI0MjAz&source_impression_id=p3_1635699091_iXh1t64i8HVD0XzD&guests=1&adults=1'
     scraper = Scraper()
-    x = scraper.scrape_product_data(test, 10000, 'test')
+    x = scraper.scrape_product_data(look, 10000, 'test')
     print(x)
     
 

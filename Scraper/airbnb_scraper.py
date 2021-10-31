@@ -480,8 +480,7 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    x = scraper.scrape_product_data(look, 10000, 'test')
-    print(x)
+    scraper.scrape_all(sample = True)
     
 
 if __name__ == '__main__':

@@ -11,4 +11,4 @@ l2 = ['a','b','c','d']
 
 zipped = zip(l1,l2)
 
-zipped = zipped[1:]
+print(list(zipped))

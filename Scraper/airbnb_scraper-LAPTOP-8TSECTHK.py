@@ -2,13 +2,13 @@
 Module description HERE
 
 '''
-import urllib.request
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-import os
+import time
 
 
 # TODO: Private bathroom! Need to parse this
@@ -34,11 +34,6 @@ class Scraper:
         '''
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
-
-        # Making destination paths for data to be stored
-        os.mkdir('data')
-        os.mkdir('data/alphanumeric')
-        os.mkdir('data/images')
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -123,7 +118,7 @@ class Scraper:
                     if counted == count:
                         return
                     
-
+ 
 
     def _get_products(self, header_url, SCROLLING = True):
         self.driver.get(header_url)
@@ -246,31 +241,9 @@ class Scraper:
 
         else:
             raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
+    
 
- 
-    #TODO: make function that gets images and dumps them in 'data/images' in an organised fashion
-    # endure that primary key matches the corresponding entry
-    def __scrape_product_images(self, driver, ID):
-        os.mkdir('data/images/'+ str(ID))
-
-
-        homePage_html = driver.find_element_by_xpath('//*')
-        homePage_html = homePage_html.get_attribute('innerHTML')
-        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-        sleep(0.1)
-        images = homePage_soup.find_all('img', class_='_6tbg2q')
-
-        if images is None:
-            raise Exception
-
-        char_no = 97
-        for image in images:
-            image_src = image['src']
-            urllib.request.urlretrieve(image_src,'data/images/' + str(ID) + '/' + str(ID) + chr(char_no)+'.png')
-            char_no +=1
-
-
-    def scrape_product_data(self, product_url, ID, category):
+    def scrape_product(self, product_url, ID, category):
         '''
         This function scrapes all relevant information from a single Airbnb
         product page. 
@@ -291,15 +264,6 @@ class Scraper:
 
         # Getting the product page and parsing the html into bs4
         self.driver.get(product_url)
-        sleep(0.33)
-
-        for i in range(self.BATCH_ATTEMPTS):
-            try:
-                self.__scrape_product_images(self.driver, ID)
-                break
-            except:
-                continue
-
 
         # Getting data from page. Looped through multiple attempts 
         # to allow for errors due to elements not being loaded yet
@@ -374,7 +338,6 @@ class Scraper:
         return product_dict
 
 
-
     def scrape_all(self, sample = False):
         '''
         The main function which utilises all other functions above to
@@ -389,7 +352,7 @@ class Scraper:
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
-        to_count = 2 if sample else 25
+        to_count = 3 if sample else 25
         filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
@@ -408,7 +371,7 @@ class Scraper:
                 for prod_url in self.product_links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product = self.scrape_product_data(prod_url, ID, self.categories[category_no])
+                        product = self.scrape_product(prod_url, ID, self.categories[category_no])
                         self.df = self.df.append(product, ignore_index=True)
                         ID+=1
                     except Exception as e:
@@ -417,13 +380,14 @@ class Scraper:
                         print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
-            self.df.to_csv('data/alphanumeric/' + filename, index=False)
+            self.df.to_csv(filename, index=False)
 
 
 
 def main():
+    testurl = 'https://www.airbnb.co.uk/rooms/50328285?_set_bev_on_new_domain=1635549222_ZTBiYTI4Zjk5Nzc3&source_impression_id=p3_1635549223_zpDx5u44aOBcaV1p&guests=1&adults=1'
     scraper = Scraper()
-    scraper.scrape_all()
+    scraper.scrape_all(sample=True)
     
 
 if __name__ == '__main__':
@@ -433,7 +397,6 @@ if __name__ == '__main__':
 ###############################################################
 # TO DO LIST:
     # Does this need any magic functions? Any more class/static functions?
-    # Get images
     # Proxy to get round the 'too many requests'
     # Is it possible to make this faster?? Threading?
     # Docstring everything properly. Look at online examples

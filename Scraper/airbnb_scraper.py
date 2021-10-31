@@ -301,7 +301,7 @@ class Scraper:
 
         # Getting data from page. Looped through multiple attempts 
         # to allow for errors due to elements not being loaded yet
-        for i in range(self.BATCH_ATTEMPTS):
+        for j in range(self.BATCH_ATTEMPTS):
             try:
 
                 # Product title (str)
@@ -479,8 +479,10 @@ class Scraper:
 
 
 def main():
+    test = 'https://www.airbnb.co.uk/rooms/50559740?_set_bev_on_new_domain=1633875005_MTAxMTlhOGI0MjAz&source_impression_id=p3_1635699091_iXh1t64i8HVD0XzD&guests=1&adults=1'
     scraper = Scraper()
-    scraper.scrape_all(sample = True)
+    x = scraper.scrape_product_data(test, 10000, 'test')
+    print(x)
     
 
 if __name__ == '__main__':

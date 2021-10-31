@@ -94,6 +94,7 @@ class Scraper:
                 # Break the entire function if count is met
                 if counted == count:
                     return zip(categories, category_links)
+
             sleep(1)
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
@@ -123,7 +124,6 @@ class Scraper:
                     if counted == count:
                         return zip(categories, category_links)
                     
-
     def _get_products(self, header_url, SCROLLING = True):
         self.driver.get(header_url)
         sleep(0.5)

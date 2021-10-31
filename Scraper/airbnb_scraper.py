@@ -433,7 +433,6 @@ class Scraper:
         return product_dict
 
 
-
     def scrape_all(self, sample = False):
         '''
         The main function which utilises all other functions above to

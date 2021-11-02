@@ -1,5 +1,38 @@
 '''
 Module description HERE
+This module shows documentation as specified by the `Google
+Python Style Guide`_. Docstrings can extend over multiple lines.
+Sections are created with a section header and a colon followed by a
+block of indented text.
+Section breaks are created by resuming unindented text. Section breaks
+are also implicitly created anytime a new section starts.
+
+List of classes:
+class Scraper
+
+List of functions:
+    def __init__(),
+    def _get_categories(),
+    def _get_products(),
+    @staticmethod
+    def string_clean(),
+    def scrape_product(),
+    def scrape_all(),
+    def main()
+
+
+
+Attributes:
+    module_level_variable (int): Module level variables documented in
+        either the ``Attributes`` section of the module docstring, or in an
+        inline docstring immediately following the variable.
+
+To do List:
+     For module TODOS to implement later on during the project cycle. This will
+     be 
+
+
+
 
 '''
 
@@ -13,7 +46,16 @@ import time
 class Scraper:
     '''
     SUMMARY OF THE SCRAPER.
-    Scrapes AirBNB for data ... 
+    Scrapes AirBNB for data, process of constructing a bot which can extract,
+    parse, download and organize important information from the web automatically.
+    Goes onto the main content page to switch through mutiple headers, collecting data
+    as elements.
+    The scraper does the following in order:
+    Downloading the contents,
+    extracting the data,
+    Storing the data,
+    Analyzing the data
+
     '''
 
     def __init__(self):
@@ -32,17 +74,20 @@ class Scraper:
         self.main_url = "https://www.airbnb.co.uk/"
 
         # Initialising the selenium webdriver
+    
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
         options.add_argument("--start-maximized")
         self.driver = webdriver.Chrome(options=options)
 
+
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
-        sleep(2)
+        sleep(5)
         cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
         cookie_button.click()
-        sleep(0.5)
+        return True
+        sleep(5)
 
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
@@ -89,7 +134,7 @@ class Scraper:
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
-                sleep(0.5)
+                sleep(5)
                 more_menu = header_container.find_element_by_class_name('_jvh3iol')
                 more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
 
@@ -101,11 +146,11 @@ class Scraper:
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
                     more_menu = header_container.find_element_by_class_name('_jvh3iol')
                     more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
-                    sleep(0.5)
+                    sleep(5)
                     # Get the category name from header
                     self.categories.append(more_headers[j].text)
                     more_headers[j].click()
-                    sleep(0.5)
+                    sleep(5)
                     # After clicking that header, get the corresponding header url for it
                     self.category_links.append(self.driver.current_url)
                     headers[i].click()
@@ -116,6 +161,12 @@ class Scraper:
  
 
     def _get_products(self, header_url, SCROLLING = True):
+        '''
+        This function takes 3 parameters and obtains the header_url
+        then uses the execute_script method for the webdriver. This method
+        synchronously executes JavaScript in the current window/frame.
+        
+        '''
         self.driver.get(header_url)
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(3)
@@ -160,6 +211,15 @@ class Scraper:
     def string_clean(text: str, str_type) -> str:
         '''
         docstring here +++++++++++++
+        using staticmethod to have something wriiten in a standalone function
+        (not part of the class) but we want to keep within the class as its related to
+        the class. 
+        subclasses might want to override.
+
+        string_clean method used to arrange the text in a clean list,
+        which is more readable with the relevant information.
+        If anomaly in site text a specific element will be ignored so 
+        data collection is not arranged improperly.
         '''
 
         if str_type == 'info':
@@ -216,11 +276,31 @@ class Scraper:
         This function scrapes all relevant information from a single Airbnb
         product page. 
         MORE HERE ++++++++++++++++++++++++++++++++++
+        Collects the product url, the elements ID and the categories of
+        these elements collected of the AirBnb url page.
+        Stores the collected data.
+        Dictionaries are changeable,
+        meaning that we can change,
+        add or remove items after the dictionary has been created.
         Attributes:
             xxx
 
+        Uses webdriver to click on the specified elements to scrape
+        the relevant information.
+        Stores IDs in a product dictionary to store data values in 
+        key value pairs.
+        Stores categories in a product diotionary to store data values
+        in key value pairs.
+
         Returns:
             xxx
+        printed values of url, IDs and categories which can be changed, added
+        or removed of items after dictionary is created, this will be useful for
+        manipulating the data after being collected for later usage.
+
+
+
+
         '''
         # Initialising default dict and adding the passed ID and 
         # category parameters
@@ -306,6 +386,7 @@ class Scraper:
         MISSING_DATA = 0
         self.df = pd.DataFrame()
 
+
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
         to_count = 3 if sample else 25
@@ -338,11 +419,12 @@ class Scraper:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
             self.df.to_csv(filename, index=False)
 
+    print(scrape_all.__doc__)
 
 
 def main():
     scraper = Scraper()
-    scraper.scrape_all(sample=False)
+    scraper._get_categories()
 
 
 if __name__ == '__main__':

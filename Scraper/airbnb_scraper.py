@@ -557,7 +557,6 @@ class Scraper:
             # Regardless of errors or interruptions, all yielded data is dumped into a csv
             self.df.to_csv('data/alphanumeric/' + filename, index=False)
 
-    print(scrape_all.__doc__)
 
 
 def main():

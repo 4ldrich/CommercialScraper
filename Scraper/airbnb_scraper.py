@@ -576,7 +576,7 @@ if __name__ == '__main__':
     # Is it possible to make this faster?? Threading?
     # Docstring everything properly. Look at online examples
     # Make Test Files etc
-    # Make the setup files
+    # Make the setup filess
 
     
 

@@ -239,8 +239,9 @@ class Scraper:
             cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
             cookie_button.click()
             sleep(0.5)
+            return True
         else:
-            return
+            return False
 
 
     @staticmethod 

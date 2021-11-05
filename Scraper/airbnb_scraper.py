@@ -102,7 +102,7 @@ class Scraper:
         sleep(3)
 
 
-    def _get_categories(self, count = 25):
+    def get_categories(self, count = 25):
 
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
@@ -168,8 +168,9 @@ class Scraper:
                     # Break the entire function if count is met
                     if counted == count:
                         return zip(categories, category_links)
-                    
-    def _get_products(self, header_url, SCROLLING = True):
+
+
+    def get_products(self, header_url, SCROLLING = True):
         '''
         This function takes 3 parameters and obtains the header_url
         then uses the execute_script method for the webdriver. This method
@@ -210,13 +211,13 @@ class Scraper:
                 # Store all links for locations listed on page in array
                 places_container = homePage_soup.find('div', class_ = '_ty2eq0')
                 places = places_container.find_all('div', class_= '_1kmzzkf')
-                self.product_links = np.array([])
+                product_links = np.array([])
                 for place in places:
                     url = f"https://www.airbnb.co.uk{place.a['href']}"
-                    self.product_links = np.append(self.product_links,url)
+                    product_links = np.append(product_links,url)
             except:
                 pass
-
+        return product_links
 
 
     def __is_cookie_button_present(self):
@@ -228,7 +229,6 @@ class Scraper:
             except:
                 pass
         return False
-
 
 
     def _cookie_check_and_click(self):
@@ -306,7 +306,6 @@ class Scraper:
         else:
             raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
 
- 
 
     def __scrape_product_images(self, driver, ID):
         os.mkdir('data/images/'+ str(ID))
@@ -533,17 +532,17 @@ class Scraper:
 
         try: 
             # Getting the zipped object of header names and urls
-            categories = self._get_categories(count = to_count)
+            categories = self.get_categories(count = to_count)
 
             # Iterating through each category yielded
             for header, link in categories:
                 # All product links are gathered into self.product_links. 
                 # When a new category is iterated, self.product_links is reassigned with the new products 
                 # For a sample, scrolling is locked so only top 20 products are accounted for
-                self._get_products(link, SCROLLING=scroll)
+                links = self.get_products(link, SCROLLING=scroll)
 
                 # Iterating over each product url in a category
-                for prod_url in self.product_links:
+                for prod_url in links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
                         product = self.scrape_product_data(prod_url, ID, header)
@@ -575,7 +574,7 @@ if __name__ == '__main__':
     # Is it possible to make this faster?? Threading?
     # Docstring everything properly. Look at online examples
     # Make Test Files etc
-    # Make the setup filess
+    # Make the setup files
 
     
 

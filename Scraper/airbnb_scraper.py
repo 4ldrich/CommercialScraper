@@ -1,36 +1,4 @@
 '''
-Module description HERE
-This module shows documentation as specified by the `Google
-Python Style Guide`_. Docstrings can extend over multiple lines.
-Sections are created with a section header and a colon followed by a
-block of indented text.
-Section breaks are created by resuming unindented text. Section breaks
-are also implicitly created anytime a new section starts.
-
-List of classes:
-class Scraper
-
-List of functions:
-    def __init__(),
-    def _get_categories(),
-    def _get_products(),
-    @staticmethod
-    def string_clean(),
-    def scrape_product(),
-    def scrape_all(),
-    def main()
-
-
-
-Attributes:
-    module_level_variable (int): Module level variables documented in
-        either the ``Attributes`` section of the module docstring, or in an
-        inline docstring immediately following the variable.
-
-To do List:
-     For module TODOS to implement later on during the project cycle. This will
-     be 
-
 
 
 

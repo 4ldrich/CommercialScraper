@@ -39,10 +39,11 @@ class Scraper:
         self.main_url = "https://www.airbnb.co.uk/"
         self.driver = None
 
+        ### TODO: LET'S RETHINK THIS. 
         # Making destination paths for data to be stored
-        os.mkdir('data')
-        os.mkdir('data/alphanumeric')
-        os.mkdir('data/images')
+        # os.mkdir('data')
+        # os.mkdir('data/alphanumeric')
+        # os.mkdir('data/images')
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -113,9 +114,6 @@ class Scraper:
             categories.append(header.text)
         categories.remove('More')
         categories = categories[:count]
-
-        print(categories)
-        print(category_links)
 
         # Click through the visible headers to get urls for each one (except for 'More')
         counted = 0
@@ -367,16 +365,16 @@ class Scraper:
         product_dict['ID'] = ID
         product_dict['Category'] = category
 
-        # Getting the product page and parsing the html into bs4
+        # Getting the product page with driver
         self.driver.get(product_url)
         sleep(0.33)
 
-        for i in range(self.BATCH_ATTEMPTS):
-            try:
-                self.__scrape_product_images(self.driver, ID)
-                break
-            except:
-                continue
+        # for i in range(self.BATCH_ATTEMPTS):
+        #     try:
+        #         self.__scrape_product_images(self.driver, ID)
+        #         break
+        #     except:
+        #         continue
 
 
         # Getting data from page. Looped through multiple attempts 
@@ -509,7 +507,6 @@ class Scraper:
             except:
  
                 continue
-        
         return product_dict
 
 
@@ -522,13 +519,13 @@ class Scraper:
         """
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
-        self.df = pd.DataFrame()
+        df = pd.DataFrame()
 
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
         to_count = 2 if sample else 25
-        filename = 'products_sample.csv' if sample else 'products.csv'
+        # filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
             # Getting the zipped object of header names and urls
@@ -546,20 +543,23 @@ class Scraper:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
                         product = self.scrape_product_data(prod_url, ID, header)
-                        self.df = self.df.append(product, ignore_index=True)
-                        ID+=1
+                        df = df.append(product, ignore_index=True)
+                        ID += 1
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
                         ID += 1
                         print(e)
         finally:
-            # Regardless of errors or interruptions, all yielded data is dumped into a csv
-            self.df.to_csv('data/alphanumeric/' + filename, index=False)
+            # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
+            self.driver.quit()
+            return df
 
 
 
 def main():
     scraper = Scraper()
+    product_df = scraper.scrape_all(sample=True)
+    print(product_df)
 
 if __name__ == '__main__':
     main()
@@ -570,6 +570,7 @@ if __name__ == '__main__':
     # Make and completea data handling module. Adjust main 2 function returns accordingly.
     # Unit testing
     # Docstring everything properly. Look at online examples
+    # Re-think how images are handled
     # Make the setup files, complete the package for publishing
     # Is it possible to make this faster?? Threading?
     

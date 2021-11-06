@@ -1,4 +1,6 @@
-
+"""
+FINISH WHEN DATA DESCISION HAS BEEN MADE
+"""
 import urllib.request
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -6,10 +8,6 @@ import numpy as np
 import pandas as pd
 from time import sleep
 import os
-
-
-# TODO: Private bathroom! Need to parse this
-look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
 
 class Scraper:
     """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
@@ -562,9 +560,6 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    x = scraper.scrape_product_data('https://www.airbnb.co.uk/rooms/38547967?category_tag=Tag%3A8186&adults=1&check_in=2022-01-03&check_out=2022-01-10&federated_search_id=98719800-a2af-4df0-b701-dbba2b5e0425&source_impression_id=p3_1636211059_mJorfOXsds4rbvli&guests=1',
-    100, 'test')
-    print(x)
 
 if __name__ == '__main__':
     main()
@@ -572,11 +567,12 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Does this need any magic functions? Any more class/static functions?
-    # Is it possible to make this faster?? Threading?
+    # Make and completea data handling module. Adjust main 2 function returns accordingly.
+    # Unit testing
     # Docstring everything properly. Look at online examples
-    # Make Test Files etc
-    # Make the setup files
+    # Make the setup files, complete the package for publishing
+    # Is it possible to make this faster?? Threading?
+    
 
     
 

@@ -56,7 +56,7 @@ class Scraper:
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
 
-        sleep(2)
+        sleep(3)
         self._cookie_check_and_click()
 
         # Click the I'm flexible to get to the product browser 
@@ -111,6 +111,9 @@ class Scraper:
         categories.remove('More')
         categories = categories[:count]
 
+        print(categories)
+        print(category_links)
+
         # Click through the visible headers to get urls for each one (except for 'More')
         counted = 0
         for i in range(len(headers)):
@@ -126,7 +129,7 @@ class Scraper:
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
-                sleep(5)
+                sleep(0.5)
                 more_menu = header_container.find_element_by_class_name('_jvh3iol')
                 more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
 
@@ -138,11 +141,11 @@ class Scraper:
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
                     more_menu = header_container.find_element_by_class_name('_jvh3iol')
                     more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
-                    sleep(5)
+                    sleep(0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)
                     more_headers[j].click()
-                    sleep(5)
+                    sleep(0.5)
                     # After clicking that header, get the corresponding header url for it
                     category_links.append(self.driver.current_url)
                     headers[i].click()
@@ -152,8 +155,22 @@ class Scraper:
                         return zip(categories, category_links)
 
 
-    def get_products(self, header_url, SCROLLING = True):
+    def __scroll(self, driver, SCROLL_PAUSE_TIME):
+        # Get scroll height
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+            # Scroll down to bottom
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # Wait to load page
+            sleep(SCROLL_PAUSE_TIME)
+            # Calculate new scroll height and compare with last scroll height
+            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                return
+            last_height = new_height
 
+
+    def get_products(self, header_url, SCROLLING = True):
 
         self.driver.get(header_url)
         sleep(0.5)
@@ -164,19 +181,7 @@ class Scraper:
         # SCROLLING will 'lazy load' all ~300 objects per header tab
         # Set to FALSE when testing/sampling
         if SCROLLING:
-            SCROLL_PAUSE_TIME = 4
-            # Get scroll height
-            last_height = self.driver.execute_script("return document.body.scrollHeight")
-            while True:
-                # Scroll down to bottom
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                # Wait to load page
-                sleep(SCROLL_PAUSE_TIME)
-                # Calculate new scroll height and compare with last scroll height
-                new_height = self.driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
+            self.__scroll(self.driver, 4)
 
         for i in range(self.BATCH_ATTEMPTS):
             try:
@@ -203,7 +208,7 @@ class Scraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_1xiwgrva") is not None
+                return self.driver.find_element_by_class_name("_p76cpas") is not None
             except:
                 pass
         return False
@@ -214,7 +219,7 @@ class Scraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
+            cookie_button= self.driver.find_element_by_class_name("_p76cpas")
             cookie_button.click()
             sleep(0.5)
             return True
@@ -492,7 +497,8 @@ class Scraper:
 
 
 def main():
-    scraper = Scraper()    
+    scraper = Scraper()
+    scraper.scrape_all()    
 
 if __name__ == '__main__':
     main()

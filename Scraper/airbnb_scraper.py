@@ -82,8 +82,13 @@ class Scraper:
         
         Returns
         -------
-        zip of tuples of (str, str)
+        zip of < tuples of (str, str) >
             A zipped object of tuples of the category name, followed by the url of opening that header.
+
+        Raises
+        ------
+        ValueError
+            If the count parameter is 0, negative, or greater than 25 (the total number of headers)
         
         """
         # The count variable is an input to stop the header yield at any given index of iteration
@@ -171,14 +176,30 @@ class Scraper:
 
 
     def get_products(self, header_url, SCROLLING = True):
+        """ Returns an array of the product urls for a homepage with a certain header clicked.
 
+        Parameters
+        ----------
+        header_url : str
+            the url of the header to be opened by the `driver` where the corresponding products can be found.
+        SCROLLING : bool , optional
+            When a header page is opened, the lazy loading of the Airbnb's website prevents all products from 
+            being located. When `SCROLLING` is set to True, this calls a protected method that scrolls through the
+            entire page so that every product is loaded and therefore the url can be stored. Setting to False is a
+            clever way of electing to only take a sample of the products from each header page. This parameter is
+            optional and defaulted to True.
+        
+        Returns
+        -------
+        product_links : np.array of str
+            A numpy array of strings containing the urls for each product that has been found.
+        """
         self.driver.get(header_url)
         sleep(0.5)
         self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(3)
 
-        # SCROLLING will 'lazy load' all ~300 objects per header tab
         # Set to FALSE when testing/sampling
         if SCROLLING:
             self.__scroll(self.driver, 4)
@@ -229,7 +250,12 @@ class Scraper:
 
     @staticmethod 
     def string_clean(text: str, str_type) -> str:
+        """ Takes in raw text from elements on Airbnb product pages and formats them into parsable strings.
 
+        Text data from elements in a product page on Airbnb's website come in a variety of forms not so easily 
+        understandable by machines. This static method is necessary to essentially clean the text from certain elements 
+        in each product page.
+        """
 
         if str_type == 'info':
             output = []
@@ -277,7 +303,7 @@ class Scraper:
             return int(''.join(filter(str.isdigit, text)))
 
         else:
-            raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
+            raise ValueError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
 
 
     def __scrape_product_images(self, driver, ID):
@@ -498,7 +524,9 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    scraper.scrape_all()    
+    x = scraper.scrape_product_data('https://www.airbnb.co.uk/rooms/38547967?category_tag=Tag%3A8186&adults=1&check_in=2022-01-03&check_out=2022-01-10&federated_search_id=98719800-a2af-4df0-b701-dbba2b5e0425&source_impression_id=p3_1636211059_mJorfOXsds4rbvli&guests=1',
+    100, 'test')
+    print(x)
 
 if __name__ == '__main__':
     main()

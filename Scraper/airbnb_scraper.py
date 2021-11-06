@@ -182,7 +182,7 @@ class Scraper:
         ----------
         header_url : str
             the url of the header to be opened by the `driver` where the corresponding products can be found.
-        SCROLLING : bool , optional
+        SCROLLING : bool , default=True
             When a header page is opened, the lazy loading of the Airbnb's website prevents all products from 
             being located. When `SCROLLING` is set to True, this calls a protected method that scrolls through the
             entire page so that every product is loaded and therefore the url can be stored. Setting to False is a
@@ -255,8 +255,35 @@ class Scraper:
         Text data from elements in a product page on Airbnb's website come in a variety of forms not so easily 
         understandable by machines. This static method is necessary to essentially clean the text from certain elements 
         in each product page.
-        """
 
+        Parameters
+        ----------
+        text : str
+            The raw text data from the element from the product page.
+        str_type : {'info', 'review count', 'amenities'}
+            The nature of the text data differs for each element of the product webpage, thus the pythonic 
+            strategem for cleaning the text data must do the same. Specifying which page element the text comes 
+            from will specify which set of programmatic instructions the method needs to take in order to clean 
+            the text data.
+        
+        Returns
+        -------
+        if `str_type` is 'info':
+            output: list of [tuples of (str, int)]
+                where the strings are labels of guests, bedrooms beds, and bathrooms, and the corresponding 
+                int is their count.
+        if `str_type` is 'review count`:
+            output: int
+                Number of reviews for product.
+        if `str_type` is 'amenities':
+            output: int
+                Number of amenities for product.
+
+        Raises
+        ------
+        ValueError
+            If the inputted string for `str_type` doesn't match any of the accepted strings.
+        """
         if str_type == 'info':
             output = []
             # Organises the text into a clean list of 
@@ -282,8 +309,8 @@ class Scraper:
                     # will confuse the dictionary and dataframe. So all singular instances have an 's' added
                     if label[-1] != 's':
                         label += 's'
-                    # The output is a nested list: [['guests', x], ['bedrooms', x] ...] 
-                    output.append([label, val.split()[0]])
+                    # The output is a list of tuples: [('guests', x), ('bedrooms', x) ...] 
+                    output.append((label, val.split()[0]))
             return output
         
 
@@ -294,13 +321,15 @@ class Scraper:
             text = text.replace(')','')
             # Split up the number and reviews string into [x, 'Reviews']
             text = text.split(' ')
-            return text[0]
+            output =  text[0]
+            return output
         
 
         elif str_type == 'amenities':
             # Simply filters out the numerical value in the text:
             # "Show all xx amenities"
-            return int(''.join(filter(str.isdigit, text)))
+            output = int(''.join(filter(str.isdigit, text)))
+            return output
 
         else:
             raise ValueError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
@@ -327,6 +356,10 @@ class Scraper:
 
 
     def scrape_product_data(self, product_url, ID, category):
+        """Gets a page of an Airbnb product and scrapes structured and unstructured data.
+
+        WRITING THIS LATER DEPENDING ON WHAT I DECIDE ABOUT DATA STORAGE
+        """
 
         self._cookie_check_and_click()
 
@@ -483,7 +516,12 @@ class Scraper:
 
 
     def scrape_all(self, sample = False):
+        """Crawls through the entire "I'm Feeling Lucky section" of Airbnb and collects structured data from each product into a pandas dataframe.
+        WHAT ABOUT IMAGES? GONNA HAVE TO RETURN THEM IN scrape_product_data()... 
 
+        COME BACK TO THIS
+        
+        """
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
         self.df = pd.DataFrame()

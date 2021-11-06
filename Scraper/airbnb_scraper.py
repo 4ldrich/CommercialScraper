@@ -49,16 +49,8 @@ look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1
 
 class Scraper:
     '''
-    SUMMARY OF THE SCRAPER.
-    Scrapes AirBNB for data, process of constructing a bot which can extract,
-    parse, download and organize important information from the web automatically.
-    Goes onto the main content page to switch through mutiple headers, collecting data
-    as elements.
-    The scraper does the following in order:
-    Downloading the contents,
-    extracting the data,
-    Storing the data,
-    Analyzing the data
+
+
 
     '''
 
@@ -172,9 +164,8 @@ class Scraper:
 
     def get_products(self, header_url, SCROLLING = True):
         '''
-        This function takes 3 parameters and obtains the header_url
-        then uses the execute_script method for the webdriver. This method
-        synchronously executes JavaScript in the current window/frame.
+
+
         
         '''
         self.driver.get(header_url)
@@ -247,16 +238,8 @@ class Scraper:
     @staticmethod 
     def string_clean(text: str, str_type) -> str:
         '''
-        docstring here +++++++++++++
-        using staticmethod to have something wriiten in a standalone function
-        (not part of the class) but we want to keep within the class as its related to
-        the class. 
-        subclasses might want to override.
 
-        string_clean method used to arrange the text in a clean list,
-        which is more readable with the relevant information.
-        If anomaly in site text a specific element will be ignored so 
-        data collection is not arranged improperly.
+
         '''
 
         if str_type == 'info':
@@ -330,31 +313,6 @@ class Scraper:
 
     def scrape_product_data(self, product_url, ID, category):
         '''
-        This function scrapes all relevant information from a single Airbnb
-        product page. 
-        MORE HERE ++++++++++++++++++++++++++++++++++
-        Collects the product url, the elements ID and the categories of
-        these elements collected of the AirBnb url page.
-        Stores the collected data.
-        Dictionaries are changeable,
-        meaning that we can change,
-        add or remove items after the dictionary has been created.
-        Attributes:
-            xxx
-
-        Uses webdriver to click on the specified elements to scrape
-        the relevant information.
-        Stores IDs in a product dictionary to store data values in 
-        key value pairs.
-        Stores categories in a product diotionary to store data values
-        in key value pairs.
-
-        Returns:
-            xxx
-        printed values of url, IDs and categories which can be changed, added
-        or removed of items after dictionary is created, this will be useful for
-        manipulating the data after being collected for later usage.
-
 
 
 
@@ -507,7 +465,7 @@ class Scraper:
                     break
             
             except:
-                sleep(0.25)
+ 
                 continue
         
         return product_dict
@@ -515,10 +473,8 @@ class Scraper:
 
     def scrape_all(self, sample = False):
         '''
-        The main function which utilises all other functions above to
-        scrape all products from all headers when sample is False, 
-        and scrapes the top 20 products from the first 3 headers (catrgories)
-        when sample is set to True
+
+
 
         '''
         # Primary key, pandas dataframe and a missing data count initialised
@@ -560,10 +516,7 @@ class Scraper:
 
 
 def main():
-    scraper = Scraper()
-
-    scraper.scrape_all(sample = True)
-    
+    scraper = Scraper()    
 
 if __name__ == '__main__':
     main()

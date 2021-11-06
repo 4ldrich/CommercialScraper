@@ -1,8 +1,4 @@
-'''
 
-
-
-'''
 import urllib.request
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -16,26 +12,34 @@ import os
 look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
 
 class Scraper:
-    '''
+    """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
+    Attributes
+    ----------
+    BATCH_ATTEMPTS : int
+        It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
+        for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
+        offers 30 attempts for the Scraper to locate and pull data from each element it is looking 
+        for, until the Scraper assumes that the element doesn't exist in the particular page.
+    main_url : str
+        The URL for Airbnb's home page, provided for the Selenium webdriver to get upon initialization
+        of the Scraper object.
+    driver : Selenium Webdriver
+        The webdriver that is utilized to crawl through Airbnb's website
 
-
-    '''
+    """
 
     def __init__(self):
-        '''
-        Initialising selenium webdriver
-        Navigate past the cookie wall and home page onto the 
-        "I'm feeling lucky" page Where there are 25 Airbnb categories, 
-        with roughly 300 Airbnb products per category
+        """Initializes an instance of a Selenium Webdriver and navigates to the main product hub of Airbnb.
 
-        Attributes:
-            sample (bool): when set to true locks scrolling, so only top 
-            20 products per category are scraped
-            BATCH_ATTEMPTS (int): allows for elements to not be loaded straight away
-        '''
+        When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
+        of the `url` attribute. Then it clicks past the cookie wall (if applicable), and navigates onto
+        the main products hub.
+        """
+
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
+        self.driver = None
 
         # Making destination paths for data to be stored
         os.mkdir('data')
@@ -43,7 +47,6 @@ class Scraper:
         os.mkdir('data/images')
 
         # Initialising the selenium webdriver
-    
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
         options.add_argument("--start-maximized")
@@ -63,7 +66,26 @@ class Scraper:
 
 
     def get_categories(self, count = 25):
+        """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
+        
+        This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
+        with the Scraper object, this method located through and clicks each header button in the top menu bar of 
+        the main products page. When each header is clicked, the category name and the current url of that clicked 
+        header are stored into a zip object. 
 
+        Parameters
+        ----------
+        count : int , optional
+            When specified, the `count` parameter will set a limit to the number of headers that are clicked through
+            and consequently, the number of categories and corresponding urls that are returned. This parameter is optional,
+            and defaulted to 25 which is the number of total headers thatpopulate Airbnb's products page.
+        
+        Returns
+        -------
+        zip of tuples of (str, str)
+            A zipped object of tuples of the category name, followed by the url of opening that header.
+        
+        """
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
@@ -131,11 +153,8 @@ class Scraper:
 
 
     def get_products(self, header_url, SCROLLING = True):
-        '''
 
 
-        
-        '''
         self.driver.get(header_url)
         sleep(0.5)
         self._cookie_check_and_click()
@@ -205,10 +224,7 @@ class Scraper:
 
     @staticmethod 
     def string_clean(text: str, str_type) -> str:
-        '''
 
-
-        '''
 
         if str_type == 'info':
             output = []
@@ -280,11 +296,7 @@ class Scraper:
 
 
     def scrape_product_data(self, product_url, ID, category):
-        '''
 
-
-
-        '''
         self._cookie_check_and_click()
 
         # Initialising default dict and adding the passed ID and 
@@ -440,11 +452,7 @@ class Scraper:
 
 
     def scrape_all(self, sample = False):
-        '''
 
-
-
-        '''
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
         self.df = pd.DataFrame()

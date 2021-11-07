@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from time import sleep
 import os
+from data_save import Save
 
 class Scraper:
     """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
@@ -560,6 +561,8 @@ def main():
     scraper = Scraper()
     product_df = scraper.scrape_all(sample=True)
     print(product_df)
+    save = Save(product_df)
+    save.df_to_csv('sampleC')
 
 if __name__ == '__main__':
     main()
@@ -567,7 +570,7 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Make and completea data handling module. Adjust main 2 function returns accordingly.
+    # Make and complete data handling module. Adjust main 2 function returns accordingly.
     # Unit testing
     # Docstring everything properly. Look at online examples
     # Re-think how images are handled

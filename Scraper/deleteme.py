@@ -7,6 +7,10 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 
+### I've set up a proper blank test file. 
+# Once you understand whats gone wrong here, delete this file and start 
+# afresh on the test_airbnb_scraper
+
 class BnbScraper_Test(unittest.TestCase):
    def setUp(self):
       # Why are you assigning a driver to a scraper object?

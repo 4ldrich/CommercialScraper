@@ -11,31 +11,27 @@ import os
 from data_save import Save
 
 class Scraper:
-    """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
-
-    Attributes
-    ----------
-    BATCH_ATTEMPTS : int
-        It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
-        for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
-        offers 30 attempts for the Scraper to locate and pull data from each element it is looking 
-        for, until the Scraper assumes that the element doesn't exist in the particular page.
-    main_url : str
-        The URL for Airbnb's home page, provided for the Selenium webdriver to get upon initialization
-        of the Scraper object.
-    driver : Selenium Webdriver
-        The webdriver that is utilized to crawl through Airbnb's website
-
-    """
-
     def __init__(self):
-        """Initializes an instance of a Selenium Webdriver and navigates to the main product hub of Airbnb.
+        """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
         When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
         of the `url` attribute. Then it clicks past the cookie wall (if applicable), and navigates onto
         the main products hub.
-        """
 
+        Attributes
+        ----------
+        BATCH_ATTEMPTS : int
+            It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
+            for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
+            offers 30 attempts for the Scraper to locate and pull data from each element it is looking 
+            for, until the Scraper assumes that the element doesn't exist in the particular page.
+        main_url : str
+            The URL for Airbnb's home page, provided for the Selenium webdriver to get upon initialization
+            of the Scraper object.
+        driver : Selenium Webdriver
+            The webdriver that is utilized to crawl through Airbnb's website
+
+        """
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
         self.driver = None

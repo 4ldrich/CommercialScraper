@@ -1,6 +1,7 @@
 import unittest
 from airbnb_scraper import Scraper
 
+# Not in the test folder for now. Having trouble importing from parallel directories for some reason...
 
 class ScraperTestCase(unittest.TestCase):
     def setUp(self) -> None:

@@ -1,40 +1,6 @@
-'''
-Module description HERE
-This module shows documentation as specified by the `Google
-Python Style Guide`_. Docstrings can extend over multiple lines.
-Sections are created with a section header and a colon followed by a
-block of indented text.
-Section breaks are created by resuming unindented text. Section breaks
-are also implicitly created anytime a new section starts.
-
-List of classes:
-class Scraper
-
-List of functions:
-    def __init__(),
-    def _get_categories(),
-    def _get_products(),
-    @staticmethod
-    def string_clean(),
-    def scrape_product(),
-    def scrape_all(),
-    def main()
-
-
-
-Attributes:
-    module_level_variable (int): Module level variables documented in
-        either the ``Attributes`` section of the module docstring, or in an
-        inline docstring immediately following the variable.
-
-To do List:
-     For module TODOS to implement later on during the project cycle. This will
-     be 
-
-
-
-
-'''
+"""
+FINISH WHEN DATA DESCISION HAS BEEN MADE
+"""
 import urllib.request
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -42,48 +8,41 @@ import numpy as np
 import pandas as pd
 from time import sleep
 import os
-
-
-# TODO: Private bathroom! Need to parse this
-look = 'https://www.airbnb.co.uk/rooms/39880406?category_tag=Tag%3A8186&adults=1&check_in=2021-12-12&check_out=2021-12-19&federated_search_id=98a9c936-7624-4e8d-9356-6bc305667f7a&source_impression_id=p3_1635279677_HneWU7t8%2F2vhed1n&guests=1'
+from data_save import Save
 
 class Scraper:
-    '''
-    SUMMARY OF THE SCRAPER.
-    Scrapes AirBNB for data, process of constructing a bot which can extract,
-    parse, download and organize important information from the web automatically.
-    Goes onto the main content page to switch through mutiple headers, collecting data
-    as elements.
-    The scraper does the following in order:
-    Downloading the contents,
-    extracting the data,
-    Storing the data,
-    Analyzing the data
-
-    '''
-
     def __init__(self):
-        '''
-        Initialising selenium webdriver
-        Navigate past the cookie wall and home page onto the 
-        "I'm feeling lucky" page Where there are 25 Airbnb categories, 
-        with roughly 300 Airbnb products per category
+        """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
-        Attributes:
-            sample (bool): when set to true locks scrolling, so only top 
-            20 products per category are scraped
-            BATCH_ATTEMPTS (int): allows for elements to not be loaded straight away
-        '''
+        When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
+        of the `url` attribute. Then it clicks past the cookie wall (if applicable), and navigates onto
+        the main products hub.
+
+        Attributes
+        ----------
+        BATCH_ATTEMPTS : int
+            It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
+            for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
+            offers 30 attempts for the Scraper to locate and pull data from each element it is looking 
+            for, until the Scraper assumes that the element doesn't exist in the particular page.
+        main_url : str
+            The URL for Airbnb's home page, provided for the Selenium webdriver to get upon initialization
+            of the Scraper object.
+        driver : Selenium Webdriver
+            The webdriver that is utilized to crawl through Airbnb's website
+
+        """
         self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
+        self.driver = None
 
+        ### TODO: LET'S RETHINK THIS. 
         # Making destination paths for data to be stored
-        os.mkdir('data')
-        os.mkdir('data/alphanumeric')
-        os.mkdir('data/images')
+        # os.mkdir('data')
+        # os.mkdir('data/alphanumeric')
+        # os.mkdir('data/images')
 
         # Initialising the selenium webdriver
-    
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
         options.add_argument("--start-maximized")
@@ -93,7 +52,7 @@ class Scraper:
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
 
-        sleep(2)
+        sleep(3)
         self._cookie_check_and_click()
 
         # Click the I'm flexible to get to the product browser 
@@ -102,8 +61,32 @@ class Scraper:
         sleep(3)
 
 
-    def _get_categories(self, count = 25):
+    def get_categories(self, count = 25):
+        """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
+        
+        This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
+        with the Scraper object, this method located through and clicks each header button in the top menu bar of 
+        the main products page. When each header is clicked, the category name and the current url of that clicked 
+        header are stored into a zip object. 
 
+        Parameters
+        ----------
+        count : int , optional
+            When specified, the `count` parameter will set a limit to the number of headers that are clicked through
+            and consequently, the number of categories and corresponding urls that are returned. This parameter is optional,
+            and defaulted to 25 which is the number of total headers thatpopulate Airbnb's products page.
+        
+        Returns
+        -------
+        zip of < tuples of (str, str) >
+            A zipped object of tuples of the category name, followed by the url of opening that header.
+
+        Raises
+        ------
+        ValueError
+            If the count parameter is 0, negative, or greater than 25 (the total number of headers)
+        
+        """
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
@@ -144,7 +127,7 @@ class Scraper:
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
-                sleep(5)
+                sleep(0.5)
                 more_menu = header_container.find_element_by_class_name('_jvh3iol')
                 more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
 
@@ -156,11 +139,11 @@ class Scraper:
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
                     more_menu = header_container.find_element_by_class_name('_jvh3iol')
                     more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
-                    sleep(5)
+                    sleep(0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)
                     more_headers[j].click()
-                    sleep(5)
+                    sleep(0.5)
                     # After clicking that header, get the corresponding header url for it
                     category_links.append(self.driver.current_url)
                     headers[i].click()
@@ -168,36 +151,51 @@ class Scraper:
                     # Break the entire function if count is met
                     if counted == count:
                         return zip(categories, category_links)
-                    
-    def _get_products(self, header_url, SCROLLING = True):
-        '''
-        This function takes 3 parameters and obtains the header_url
-        then uses the execute_script method for the webdriver. This method
-        synchronously executes JavaScript in the current window/frame.
+
+
+    def __scroll(self, driver, SCROLL_PAUSE_TIME):
+        # Get scroll height
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+            # Scroll down to bottom
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # Wait to load page
+            sleep(SCROLL_PAUSE_TIME)
+            # Calculate new scroll height and compare with last scroll height
+            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                return
+            last_height = new_height
+
+
+    def get_products(self, header_url, SCROLLING = True):
+        """ Returns an array of the product urls for a homepage with a certain header clicked.
+
+        Parameters
+        ----------
+        header_url : str
+            the url of the header to be opened by the `driver` where the corresponding products can be found.
+        SCROLLING : bool , default=True
+            When a header page is opened, the lazy loading of the Airbnb's website prevents all products from 
+            being located. When `SCROLLING` is set to True, this calls a protected method that scrolls through the
+            entire page so that every product is loaded and therefore the url can be stored. Setting to False is a
+            clever way of electing to only take a sample of the products from each header page. This parameter is
+            optional and defaulted to True.
         
-        '''
+        Returns
+        -------
+        product_links : np.array of str
+            A numpy array of strings containing the urls for each product that has been found.
+        """
         self.driver.get(header_url)
         sleep(0.5)
         self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(3)
 
-        # SCROLLING will 'lazy load' all ~300 objects per header tab
         # Set to FALSE when testing/sampling
         if SCROLLING:
-            SCROLL_PAUSE_TIME = 4
-            # Get scroll height
-            last_height = self.driver.execute_script("return document.body.scrollHeight")
-            while True:
-                # Scroll down to bottom
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                # Wait to load page
-                sleep(SCROLL_PAUSE_TIME)
-                # Calculate new scroll height and compare with last scroll height
-                new_height = self.driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
+            self.__scroll(self.driver, 4)
 
         for i in range(self.BATCH_ATTEMPTS):
             try:
@@ -210,13 +208,13 @@ class Scraper:
                 # Store all links for locations listed on page in array
                 places_container = homePage_soup.find('div', class_ = '_ty2eq0')
                 places = places_container.find_all('div', class_= '_1kmzzkf')
-                self.product_links = np.array([])
+                product_links = np.array([])
                 for place in places:
                     url = f"https://www.airbnb.co.uk{place.a['href']}"
-                    self.product_links = np.append(self.product_links,url)
+                    product_links = np.append(product_links,url)
             except:
                 pass
-
+        return product_links
 
 
     def __is_cookie_button_present(self):
@@ -224,11 +222,10 @@ class Scraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_1xiwgrva") is not None
+                return self.driver.find_element_by_class_name("_p76cpas") is not None
             except:
                 pass
         return False
-
 
 
     def _cookie_check_and_click(self):
@@ -236,28 +233,50 @@ class Scraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_1xiwgrva")
+            cookie_button= self.driver.find_element_by_class_name("_p76cpas")
             cookie_button.click()
             sleep(0.5)
+            return True
         else:
-            return
+            return False
 
 
     @staticmethod 
     def string_clean(text: str, str_type) -> str:
-        '''
-        docstring here +++++++++++++
-        using staticmethod to have something wriiten in a standalone function
-        (not part of the class) but we want to keep within the class as its related to
-        the class. 
-        subclasses might want to override.
+        """ Takes in raw text from elements on Airbnb product pages and formats them into parsable strings.
 
-        string_clean method used to arrange the text in a clean list,
-        which is more readable with the relevant information.
-        If anomaly in site text a specific element will be ignored so 
-        data collection is not arranged improperly.
-        '''
+        Text data from elements in a product page on Airbnb's website come in a variety of forms not so easily 
+        understandable by machines. This static method is necessary to essentially clean the text from certain elements 
+        in each product page.
 
+        Parameters
+        ----------
+        text : str
+            The raw text data from the element from the product page.
+        str_type : {'info', 'review count', 'amenities'}
+            The nature of the text data differs for each element of the product webpage, thus the pythonic 
+            strategem for cleaning the text data must do the same. Specifying which page element the text comes 
+            from will specify which set of programmatic instructions the method needs to take in order to clean 
+            the text data.
+        
+        Returns
+        -------
+        if `str_type` is 'info':
+            output: list of [tuples of (str, int)]
+                where the strings are labels of guests, bedrooms beds, and bathrooms, and the corresponding 
+                int is their count.
+        if `str_type` is 'review count`:
+            output: int
+                Number of reviews for product.
+        if `str_type` is 'amenities':
+            output: int
+                Number of amenities for product.
+
+        Raises
+        ------
+        ValueError
+            If the inputted string for `str_type` doesn't match any of the accepted strings.
+        """
         if str_type == 'info':
             output = []
             # Organises the text into a clean list of 
@@ -283,8 +302,8 @@ class Scraper:
                     # will confuse the dictionary and dataframe. So all singular instances have an 's' added
                     if label[-1] != 's':
                         label += 's'
-                    # The output is a nested list: [['guests', x], ['bedrooms', x] ...] 
-                    output.append([label, val.split()[0]])
+                    # The output is a list of tuples: [('guests', x), ('bedrooms', x) ...] 
+                    output.append((label, val.split()[0]))
             return output
         
 
@@ -295,18 +314,19 @@ class Scraper:
             text = text.replace(')','')
             # Split up the number and reviews string into [x, 'Reviews']
             text = text.split(' ')
-            return text[0]
+            output =  text[0]
+            return output
         
 
         elif str_type == 'amenities':
             # Simply filters out the numerical value in the text:
             # "Show all xx amenities"
-            return int(''.join(filter(str.isdigit, text)))
+            output = int(''.join(filter(str.isdigit, text)))
+            return output
 
         else:
-            raise TypeError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
+            raise ValueError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
 
- 
 
     def __scrape_product_images(self, driver, ID):
         os.mkdir('data/images/'+ str(ID))
@@ -329,36 +349,11 @@ class Scraper:
 
 
     def scrape_product_data(self, product_url, ID, category):
-        '''
-        This function scrapes all relevant information from a single Airbnb
-        product page. 
-        MORE HERE ++++++++++++++++++++++++++++++++++
-        Collects the product url, the elements ID and the categories of
-        these elements collected of the AirBnb url page.
-        Stores the collected data.
-        Dictionaries are changeable,
-        meaning that we can change,
-        add or remove items after the dictionary has been created.
-        Attributes:
-            xxx
+        """Gets a page of an Airbnb product and scrapes structured and unstructured data.
 
-        Uses webdriver to click on the specified elements to scrape
-        the relevant information.
-        Stores IDs in a product dictionary to store data values in 
-        key value pairs.
-        Stores categories in a product diotionary to store data values
-        in key value pairs.
+        WRITING THIS LATER DEPENDING ON WHAT I DECIDE ABOUT DATA STORAGE
+        """
 
-        Returns:
-            xxx
-        printed values of url, IDs and categories which can be changed, added
-        or removed of items after dictionary is created, this will be useful for
-        manipulating the data after being collected for later usage.
-
-
-
-
-        '''
         self._cookie_check_and_click()
 
         # Initialising default dict and adding the passed ID and 
@@ -367,16 +362,16 @@ class Scraper:
         product_dict['ID'] = ID
         product_dict['Category'] = category
 
-        # Getting the product page and parsing the html into bs4
+        # Getting the product page with driver
         self.driver.get(product_url)
         sleep(0.33)
 
-        for i in range(self.BATCH_ATTEMPTS):
-            try:
-                self.__scrape_product_images(self.driver, ID)
-                break
-            except:
-                continue
+        # for i in range(self.BATCH_ATTEMPTS):
+        #     try:
+        #         self.__scrape_product_images(self.driver, ID)
+        #         break
+        #     except:
+        #         continue
 
 
         # Getting data from page. Looped through multiple attempts 
@@ -507,64 +502,63 @@ class Scraper:
                     break
             
             except:
-                sleep(0.25)
+ 
                 continue
-        
         return product_dict
 
 
     def scrape_all(self, sample = False):
-        '''
-        The main function which utilises all other functions above to
-        scrape all products from all headers when sample is False, 
-        and scrapes the top 20 products from the first 3 headers (catrgories)
-        when sample is set to True
+        """Crawls through the entire "I'm Feeling Lucky section" of Airbnb and collects structured data from each product into a pandas dataframe.
+        WHAT ABOUT IMAGES? GONNA HAVE TO RETURN THEM IN scrape_product_data()... 
 
-        '''
+        COME BACK TO THIS
+        
+        """
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
-        self.df = pd.DataFrame()
+        df = pd.DataFrame()
 
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
         to_count = 2 if sample else 25
-        filename = 'products_sample.csv' if sample else 'products.csv'
+        # filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
             # Getting the zipped object of header names and urls
-            categories = self._get_categories(count = to_count)
+            categories = self.get_categories(count = to_count)
 
             # Iterating through each category yielded
             for header, link in categories:
                 # All product links are gathered into self.product_links. 
                 # When a new category is iterated, self.product_links is reassigned with the new products 
                 # For a sample, scrolling is locked so only top 20 products are accounted for
-                self._get_products(link, SCROLLING=scroll)
+                links = self.get_products(link, SCROLLING=scroll)
 
                 # Iterating over each product url in a category
-                for prod_url in self.product_links:
+                for prod_url in links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
                         product = self.scrape_product_data(prod_url, ID, header)
-                        self.df = self.df.append(product, ignore_index=True)
-                        ID+=1
+                        df = df.append(product, ignore_index=True)
+                        ID += 1
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
                         ID += 1
                         print(e)
         finally:
-            # Regardless of errors or interruptions, all yielded data is dumped into a csv
-            self.df.to_csv('data/alphanumeric/' + filename, index=False)
+            # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
+            self.driver.quit()
+            return df
 
-    print(scrape_all.__doc__)
 
 
 def main():
     scraper = Scraper()
-
-    scraper.scrape_all(sample = True)
-    
+    product_df = scraper.scrape_all(sample=True)
+    print(product_df)
+    save = Save(product_df)
+    save.df_to_csv('sampleC')
 
 if __name__ == '__main__':
     main()
@@ -572,11 +566,13 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Does this need any magic functions? Any more class/static functions?
-    # Is it possible to make this faster?? Threading?
+    # Make and complete data handling module. Adjust main 2 function returns accordingly.
+    # Unit testing
     # Docstring everything properly. Look at online examples
-    # Make Test Files etc
-    # Make the setup files
+    # Re-think how images are handled
+    # Make the setup files, complete the package for publishing
+    # Is it possible to make this faster?? Threading?
+    
 
     
 

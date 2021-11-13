@@ -315,7 +315,7 @@ class Scraper:
             # Split up the number and reviews string into [x, 'Reviews']
             text = text.split(' ')
             output =  text[0]
-            return output
+            return int(output)
         
 
         elif str_type == 'amenities':
@@ -555,10 +555,11 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    product_df = scraper.scrape_all(sample=True)
-    print(product_df)
-    save = Save(product_df)
-    save.df_to_csv('sample')
+    product_url = 'https://www.airbnb.co.uk/rooms/23433324?category_tag=Tag%3A789&adults=1&check_in=2021-12-06&check_out=2021-12-13&federated_search_id=bd72f9fa-791d-4f7a-9357-2af7e75f2f14&source_impression_id=p3_1636829919_a7uuJaFzYS8j6Xgc&guests=1'
+
+    product = scraper.scrape_product_data(product_url, 100, 'ttest')
+    print(product)
+
 
 if __name__ == '__main__':
     main()

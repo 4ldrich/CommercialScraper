@@ -206,7 +206,7 @@ class Scraper:
 
 
                 # Store all links for locations listed on page in array
-                places_container = homePage_soup.find('div', class_ = '_ty2eq0')
+                places_container = homePage_soup.find('div', class_ = '_1teg00s')
                 places = places_container.find_all('div', class_= '_1kmzzkf')
                 product_links = np.array([])
                 for place in places:
@@ -222,7 +222,7 @@ class Scraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_p76cpas") is not None
+                return self.driver.find_element_by_class_name("_1qbm6oii") is not None
             except:
                 pass
         return False
@@ -233,7 +233,7 @@ class Scraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_p76cpas")
+            cookie_button= self.driver.find_element_by_class_name("_1qbm6oii")
             cookie_button.click()
             sleep(0.5)
             return True
@@ -558,7 +558,7 @@ def main():
     product_df = scraper.scrape_all(sample=True)
     print(product_df)
     save = Save(product_df)
-    save.df_to_csv('sampleC')
+    save.df_to_csv('sample')
 
 if __name__ == '__main__':
     main()

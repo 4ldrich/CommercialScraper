@@ -3,12 +3,15 @@ FINISH WHEN DATA DESCISION HAS BEEN MADE
 """
 import urllib.request
 from bs4 import BeautifulSoup
+import sys
+sys.path.append('../')
 from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
 import os
-from data_save import Save
+from Scraper.data_save import Save
+# 3.141.0
 
 class Scraper:
     def __init__(self):
@@ -54,7 +57,6 @@ class Scraper:
 
         sleep(3)
         self._cookie_check_and_click()
-
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
         flexible_button.click()
@@ -356,6 +358,9 @@ class Scraper:
 
         self._cookie_check_and_click()
 
+        if category == 'Luxe':
+            return
+
         # Initialising default dict and adding the passed ID and 
         # category parameters
         product_dict = dict()
@@ -555,10 +560,10 @@ class Scraper:
 
 def main():
     scraper = Scraper()
-    product_url = 'https://www.airbnb.co.uk/rooms/23433324?category_tag=Tag%3A789&adults=1&check_in=2021-12-06&check_out=2021-12-13&federated_search_id=bd72f9fa-791d-4f7a-9357-2af7e75f2f14&source_impression_id=p3_1636829919_a7uuJaFzYS8j6Xgc&guests=1'
+    a_df = scraper.scrape_all(sample=True)
+    print(a_df)
 
-    product = scraper.scrape_product_data(product_url, 100, 'ttest')
-    print(product)
+
 
 
 if __name__ == '__main__':
@@ -567,11 +572,12 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
+    # Re-think how images are handled
     # Make and complete data handling module. Adjust main 2 function returns accordingly.
     # Unit testing
     # Docstring everything properly. Look at online examples
-    # Re-think how images are handled
     # Make the setup files, complete the package for publishing
+    # Make Dockerfile. Check it can be containerised
     # Is it possible to make this faster?? Threading?
     
 

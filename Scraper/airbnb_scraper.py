@@ -305,7 +305,7 @@ class Scraper:
                     if label[-1] != 's':
                         label += 's'
                     # The output is a list of tuples: [('guests', x), ('bedrooms', x) ...] 
-                    output.append((label, val.split()[0]))
+                    output.append((label, float(val.split()[0])))
             return output
         
 
@@ -331,10 +331,6 @@ class Scraper:
 
 
     def __scrape_product_images(self, driver, ID):
-        os.mkdir('data/images/'+ str(ID))
-
-
-        sleep(0.33)
         homePage_html = driver.find_element_by_xpath('//*')
         homePage_html = homePage_html.get_attribute('innerHTML')
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
@@ -343,12 +339,12 @@ class Scraper:
         if images is None:
             raise Exception
 
-        char_no = 97
+        sources = []
         for image in images:
-            image_src = image['src']
-            urllib.request.urlretrieve(image_src,'data/images/' + str(ID) + '/' + str(ID) + chr(char_no) + '.png')
-            char_no +=1
-
+            sources.append(image['src'])
+        
+        return tuple(sources)
+            
 
     def scrape_product_data(self, product_url, ID, category):
         """Gets a page of an Airbnb product and scrapes structured and unstructured data.
@@ -359,7 +355,7 @@ class Scraper:
         self._cookie_check_and_click()
 
         if category == 'Luxe':
-            return
+            return None, None
 
         # Initialising default dict and adding the passed ID and 
         # category parameters
@@ -371,12 +367,12 @@ class Scraper:
         self.driver.get(product_url)
         sleep(0.33)
 
-        # for i in range(self.BATCH_ATTEMPTS):
-        #     try:
-        #         self.__scrape_product_images(self.driver, ID)
-        #         break
-        #     except:
-        #         continue
+        for i in range(self.BATCH_ATTEMPTS):
+            try:
+                image_data = self.__scrape_product_images(self.driver, ID)
+                break
+            except:
+                continue
 
 
         # Getting data from page. Looped through multiple attempts 
@@ -444,7 +440,7 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
-                        product_dict['Overall_Rate'] = overall_rating
+                        product_dict['Overall_Rate'] = float(overall_rating)
                         break
                     except:
                         continue
@@ -456,7 +452,8 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
-                        product_dict['Price_Night'] = price_pNight
+                        price_pNight = price_pNight.replace(',', '')
+                        product_dict['Price_Night'] = float(price_pNight)
                         break
                     except:
                         continue
@@ -473,7 +470,7 @@ class Scraper:
                         for subrating in subratings:
                             if subrating.div.div.div.text:
                                 product_dict[subrating.div.div.div.text + '_rate'] = \
-                                    subrating.div.div.div.nextSibling.text
+                                    float(subrating.div.div.div.nextSibling.text)
                         break
                     except:
                         continue
@@ -509,7 +506,7 @@ class Scraper:
             except:
  
                 continue
-        return product_dict
+        return product_dict, image_data
 
 
     def scrape_all(self, sample = False):
@@ -522,12 +519,12 @@ class Scraper:
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
         df = pd.DataFrame()
+        image_dict = dict()
 
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
         to_count = 2 if sample else 25
-        # filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
             # Getting the zipped object of header names and urls
@@ -544,24 +541,27 @@ class Scraper:
                 for prod_url in links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product = self.scrape_product_data(prod_url, ID, header)
+                        product, images = self.scrape_product_data(prod_url, ID, header)
                         df = df.append(product, ignore_index=True)
+                        image_dict[ID] = images
                         ID += 1
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
+                        print(f'Error on product{ID}: {e}')
                         ID += 1
-                        print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
             self.driver.quit()
-            return df
+            return df, image_dict
 
 
 
 def main():
     scraper = Scraper()
-    a_df = scraper.scrape_all(sample=True)
-    print(a_df)
+    a_df, images = scraper.scrape_all(sample=True)
+    print(images)
+    save = Save(a_df)
+    save.df_to_s3('AKIASBYMWT7RWS6BFK7A', 'us-east-2', 'q8pm2ojJbZFgOSu6O+3nFXKGZF52E7jptXzLgzZx', 'myfirstbucketomartahmas','airbnb_data')
 
 
 

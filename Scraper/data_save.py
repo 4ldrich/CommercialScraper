@@ -3,7 +3,10 @@ MODULE DOCSTRING HERE
 """
 import pandas as pd
 from sqlalchemy import create_engine
-import psycopg2
+import psycopg2 
+import io
+from io import StringIO
+import csv
 
 # TODO: Need to figure out how to handle the images
 
@@ -58,18 +61,33 @@ class Save:
             filename += '.json'
         self.df.to_json(filename)
 
-    # TODO:
-    def df_to_sql(self, name):
-        DATABASE_TYPE = 'postgresql'
-        DBAPI = 'psycopg2'
-        HOST = 'localhost'
-        USER = 'postgres'
-        PASSWORD = 'password'
-        DATABASE = 'Pagila'
-        PORT = 5432
-        engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
-        self.df.to_sql(name,engine)
+    def __psql_insert_copy(self, table, conn, keys, data_iter) -> None:
+        # gets a DBAPI connection that can provide a cursor
+        dbapi_conn = conn.connection
+        with dbapi_conn.cursor() as cur:
+            s_buf = StringIO()
+            writer = csv.writer(s_buf)
+            writer.writerows(data_iter)
+            s_buf.seek(0)
+
+            columns = ', '.join('"{}"'.format(k) for k in keys)
+            if table.schema:
+                table_name = '{}.{}'.format(table.schema, table.name)
+            else:
+                table_name = table.name
+
+            sql = 'COPY {} ({}) FROM STDIN WITH CSV'.format(
+                table_name, columns)
+            cur.copy_expert(sql=sql, file=s_buf)
+
+
+    def df_to_postgresql(self, table_name: str, username: str, password: str, hostname: str, port: str, database: str) -> None:
+        if isinstance(port, str) is False:
+            port = str(port)
+        engine = create_engine(f'postgresql://{username}:{password}@{hostname}:{port}/{database}')
+        self.df.to_sql(table_name, engine, method=self.__psql_insert_copy)
+
 
     # TODO:
     def df_to_s3(self):
@@ -82,9 +100,8 @@ def main():
                     'mask': ['red', 'purple'],
                     'weapon': ['sai', 'bo staff']})
     print(df)
-
     x = Save(df)
-    x.df_to_json('test.json')
+    x.df_to_postgresql('args', 'postgres', 'Badwolf10-1', 'localhost', 5432, 'Pagila')
 
 
 if __name__ == '__main__':

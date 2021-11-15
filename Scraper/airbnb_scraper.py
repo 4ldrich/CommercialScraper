@@ -348,6 +348,8 @@ class Scraper:
         if category == 'Luxe':
             return None, ()
 
+
+
         # Initialising default dict and adding the passed ID and 
         # category parameters
         product_dict = dict()
@@ -553,6 +555,7 @@ class Scraper:
 def main():
     scraper = Scraper()
     a_df, images = scraper.scrape_all(sample=True)
+
     save = Save(a_df, images)
     save.images_to_local()
     save.df_to_csv('test')

@@ -11,8 +11,6 @@ import tempfile
 import boto3
 import os
 
-# TODO: Need to figure out how to handle the images
-
 class Save:
     """A dynamic and intelligent way to save both structured and unstructured data locally and/or on the cloud.
 

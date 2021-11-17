@@ -1,5 +1,8 @@
 """
-MODULE DOCSTRING HERE
+A dynamic and intelligent module to save both structured and unstructured data locally and/or on the cloud.
+
+Structured data shopuld be inputted in the form of a pandas dataframe, and unstructurted data should be inputted as a dictionary 
+containing relevant id's as keys and iterable objects of source links as values.
 """
 import pandas as pd
 import urllib.request
@@ -12,16 +15,27 @@ import boto3
 import os
 
 class Save:
-    """A dynamic and intelligent way to save both structured and unstructured data locally and/or on the cloud.
+    def __init__(self, df : pd.DataFrame, unstructured=None) -> None:
+        """This makes the process of permenently storing data easy and abstract.
 
-    FINISH WHEN CLASS IS FINISHED
-    """
-    def __init__(self, dataframe : pd.DataFrame, unstructured=None) -> None:
-        self.df = dataframe
+        When an instance of the `Save` class is initialised, the data frame and (optional) source links
+        can be easily written to a range of storage formats both locally and on the cloud, by utiliing the
+        powerful functionality of pandas and sqlalchemy.
+
+        Attributes
+        ----------
+        df : pd.DataFrame
+            A pandas dataframe is the required input format for structured data.
+        unstructured : dict of {any : iterable}
+            'unstructured' must  be inputted as a dictionary containing relevant id's as keys and iterable objects of source links as values.
+
+        """
+        self.df = df
         self.unstructured = unstructured
 
     @staticmethod
     def __dirs_check_and_make(struct: bool = False, unstruct: bool = False) -> None:
+        # Makes local directories if they havent already been made so that local data can be stored neatly
         if struct:
             if os.path.exists('data') == False:
                 os.mkdir('data')
@@ -35,7 +49,7 @@ class Save:
 
 
     def df_to_csv(self, filename: str) -> None:
-        """Saves a pandas dataframe object locally to a csv file in specified name/path.
+        """Saves a pandas dataframe object locally to a csv file in specified name.
 
         Parameters
         ----------
@@ -51,7 +65,7 @@ class Save:
 
 
     def df_to_pickle(self, filename: str) -> None:
-        """Saves a pandas dataframe object locally to a pickle object in specified name/path.
+        """Saves a pandas dataframe object locally to a pickle object in specified name.
 
         Parameters
         ----------
@@ -67,7 +81,7 @@ class Save:
 
 
     def df_to_json(self, filename: str) -> None:
-        """Saves a pandas dataframe object locally to a JSON file in specified name/path.
+        """Saves a pandas dataframe object locally to a JSON file in specified name.
 
         Parameters
         ----------
@@ -83,6 +97,7 @@ class Save:
 
 
     def __psql_insert_copy(self, table, conn, keys, data_iter) -> None:
+        # This pvt. method feeds into df_to_postgresql() as the `method` parameter in the pandas method to_sql
         # gets a DBAPI connection that can provide a cursor
         dbapi_conn = conn.connection
         with dbapi_conn.cursor() as cur:
@@ -91,6 +106,7 @@ class Save:
             writer.writerows(data_iter)
             s_buf.seek(0)
 
+            # Manually formats df to csv. This is computationally the fastest method
             columns = ', '.join('"{}"'.format(k) for k in keys)
             if table.schema:
                 table_name = '{}.{}'.format(table.schema, table.name)
@@ -103,16 +119,52 @@ class Save:
 
 
     def df_to_postgresql(self, table_name: str, username: str, password: str, hostname: str, port: str, database: str) -> None:
+        """Abstracts the process of saving a pandas dataframe to a postgres sql database.
+
+        Parameters
+        ----------
+        table_name : str
+            The name of the table that you wish to assign.
+        username : str
+            The username of the connected postgres sql database. This can be found on the 'Properties' tab on the server.
+        password : str
+            The user's password.
+        hostname : str
+            The host name/address. This can be found on the 'Properties' tab on the server.
+        port : str
+            The port number of the database. This can be found on the 'Properties' tab on the server.
+        database : str
+            The name of the database that you wish to store your table.
+        
+        """
         print(f'Saving dataframe to SQL: {database}.{table_name}')
+        # Ensures that the port parameter is an string and not an integer, which would break the method
         if isinstance(port, str) is False:
             port = str(port)
         engine = create_engine(f'postgresql://{username}:{password}@{hostname}:{port}/{database}')
         self.df.to_sql(table_name, engine, method=self.__psql_insert_copy, index=False)
 
 
-    def df_to_s3(self,aws_access_key_id,region_name, aws_secret_access_key, bucket_name, upload_name) -> None:
+    def df_to_s3(self, aws_access_key_id : str, region_name : str, aws_secret_access_key : str, bucket_name : str, upload_name : str) -> None:
+        """Storing on the cloud made easy. All that is required is an s3 bucket that is open to the local IP address. For more information about setting up an AWS s3 bucket, see https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html
+
+        Parameters
+        ----------
+        aws_access_key_id : str
+            The access_key provided by AWS.
+        region_name : str
+            The region name provided by AWS.
+        aws_secret_access_key : str
+            The secret access_key provided by AWS.
+        bucket_name : str
+            The name of the bucket that the user has assigned upon creation.
+        upload_name : str
+            The name of the directory inside the s3 bucket that the user wishes to assign.
+
+        """
         print(f'Uploading dataframe to AWS s3 bucket: {bucket_name}')
         self.s3_client = boto3.client('s3', aws_access_key_id= aws_access_key_id , region_name= region_name, aws_secret_access_key= aws_secret_access_key)
+        # A temporary file ensures that the data isn't permanently stored locally
         with tempfile.NamedTemporaryFile() as temp:
             self.df.to_csv(temp.name + '.csv')
             self.s3_client.upload_file(f'{temp.name}.csv', bucket_name, f'{upload_name}/{temp.name}.csv')
@@ -120,6 +172,11 @@ class Save:
 
 
     def images_to_local(self) -> None:
+        """A method of storing source links for unstructured data locally. 
+        
+        Each source is stored as a png file, and all sources are stored locally in data/unstructured/ 
+        Furthermore, the png's will be stored in respective directories that each are dedicated to a single ID.
+        """
         print('Saving images locally')
         self.__dirs_check_and_make(unstruct = True)
         for k, v in self.unstructured.items():
@@ -132,8 +189,25 @@ class Save:
 
 
     def images_to_s3(self,aws_access_key_id,region_name, aws_secret_access_key, bucket_name, upload_name) -> None:
+        """Storing on the cloud made easy. All that is required is an s3 bucket that is open to the local IP address. For more information about setting up an AWS s3 bucket, see https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html
+ 
+        Parameters
+        ----------
+        aws_access_key_id : str
+            The access_key provided by AWS.
+        region_name : str
+            The region name provided by AWS.
+        aws_secret_access_key : str
+            The secret access_key provided by AWS.
+        bucket_name : str
+            The name of the bucket that the user has assigned upon creation.
+        upload_name : str
+            The name of the directory inside the s3 bucket that the user wishes to assign.
+
+        """
         print(f'Uploading images to AWS s3 bucket: {bucket_name}')
         self.s3_client = boto3.client('s3', aws_access_key_id= aws_access_key_id , region_name= region_name, aws_secret_access_key= aws_secret_access_key)
+        # A temporary file ensures that the data isn't permanently stored locally
         with tempfile.TemporaryDirectory() as tmp:
             for k, v in self.unstructured.items():
                 ID = str(k)
@@ -156,9 +230,5 @@ def main():
 
 if __name__ == '__main__':
     main()
-    ###############################################################
-# TO DO LIST:
-    # Correct locations in df docstrings
-    # Complete missing docstrings
 
      

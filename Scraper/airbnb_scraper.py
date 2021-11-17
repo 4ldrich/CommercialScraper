@@ -1,9 +1,12 @@
 """
-FINISH WHEN DATA DESCISION HAS BEEN MADE
+A melded crawler and scraper which acts as the head of the data pipeline of Airbnb's product data scraping. 
+Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate and collect data from the website, 
+without the use of an API.
 """
 from bs4 import BeautifulSoup
 import sys
 sys.path.append('../')
+import selenium
 from selenium import webdriver
 import numpy as np
 import pandas as pd
@@ -54,7 +57,7 @@ class Scraper:
         sleep(3)
 
 
-    def get_categories(self, count = 25):
+    def get_categories(self, count : int = 25):
         """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
         
         This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
@@ -67,7 +70,7 @@ class Scraper:
         count : int , optional
             When specified, the `count` parameter will set a limit to the number of headers that are clicked through
             and consequently, the number of categories and corresponding urls that are returned. This parameter is optional,
-            and defaulted to 25 which is the number of total headers thatpopulate Airbnb's products page.
+            and defaulted to 25 which is the number of total headers that populate Airbnb's products page.
         
         Returns
         -------
@@ -146,7 +149,7 @@ class Scraper:
                         return zip(categories, category_links)
 
 
-    def __scroll(self, driver, SCROLL_PAUSE_TIME):
+    def __scroll(self, driver : selenium.webdriver, SCROLL_PAUSE_TIME : int):
         # Get scroll height
         last_height = driver.execute_script("return document.body.scrollHeight")
         while True:
@@ -161,7 +164,7 @@ class Scraper:
             last_height = new_height
 
 
-    def get_products(self, header_url, SCROLLING = True):
+    def get_products(self, header_url : str, SCROLLING : bool = True):
         """ Returns an array of the product urls for a homepage with a certain header clicked.
 
         Parameters
@@ -233,9 +236,8 @@ class Scraper:
         else:
             return False
 
-
     @staticmethod 
-    def string_clean(text: str, str_type) -> str:
+    def string_clean(text: str, str_type : str) -> str:
         """ Takes in raw text from elements on Airbnb product pages and formats them into parsable strings.
 
         Text data from elements in a product page on Airbnb's website come in a variety of forms not so easily 
@@ -321,7 +323,7 @@ class Scraper:
             raise ValueError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
 
 
-    def __scrape_product_images(self, driver, ID):
+    def __scrape_product_images(self, driver : selenium.webdriver):
         homePage_html = driver.find_element_by_xpath('//*')
         homePage_html = homePage_html.get_attribute('innerHTML')
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
@@ -337,10 +339,25 @@ class Scraper:
         return tuple(sources)
             
 
-    def scrape_product_data(self, product_url, ID, category):
-        """Gets a page of an Airbnb product and scrapes structured and unstructured data.
+    def scrape_product_data(self, product_url: str, ID : int, category : str):
+        """Gets a page of an Airbnb product and scrapes structured and unstructured data. Utilises both Selenium and BeautifulSoup.
 
-        WRITING THIS LATER DEPENDING ON WHAT I DECIDE ABOUT DATA STORAGE
+        Parameters
+        ----------
+        product_url : str
+            The url of the product page to be scraped
+        ID : int
+            The unique ID assigned to the particular product. This will be used to identify the data in a database/data lake.
+        category : str
+            The category name corresponding to where a product is found. This can be read on the headers tab on Airbnb's website.
+
+        Returns
+        -------
+        product_dict : dict of {str : any}
+            Structured data stored in the form of a dictionary containing relevant and human readable information about the product.
+        image_data : tuple of (str, str, ...)
+            A tuple of source links for the images found on Airbnb's website. These can be transformed into image files.
+
         """
         self._cookie_check_and_click()
 
@@ -360,7 +377,7 @@ class Scraper:
 
         for i in range(self.BATCH_ATTEMPTS):
             try:
-                image_data = self.__scrape_product_images(self.driver, ID)
+                image_data = self.__scrape_product_images(self.driver)
                 if image_data[1]:
                     break
                 else:
@@ -503,12 +520,25 @@ class Scraper:
         return product_dict, image_data
 
 
-    def scrape_all(self, sample = False):
-        """Crawls through the entire "I'm Feeling Lucky section" of Airbnb and collects structured data from each product into a pandas dataframe.
-        WHAT ABOUT IMAGES? GONNA HAVE TO RETURN THEM IN scrape_product_data()... 
-
-        COME BACK TO THIS
+    def scrape_all(self, sample : bool = False):
+        """Crawls through the entire "I'm Feeling Lucky section" of Airbnb and collects structured and unstructured data from each product.
         
+        Structured data is stored in the form of a pandas dataframe, and unstructured data (images) are stored in a dictionary of corresponding 
+        product IDs as keys, and tuples of source links for each product as the values.
+
+        Parameters
+        ----------
+        sample : bool, default=True
+            Scraping the entirety of Airbnb's products hub is a large task. The `sample` locig, when set to true, severely restricts the number of products
+            that the crawler will try to scrape, in the event that one simply wishes to only scrape a few products, or quickly test that the module is functioning.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            The pandas dataframe containing all of the information for each product scraped in a neat and structured fashion.
+        image_dict : dict of {int : tuple of (str, str, ...)}
+            Image data is stored in a dictionary of corresponding product IDs as keys, and tuples of source links for each product as the values.
+
         """
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
@@ -563,7 +593,6 @@ if __name__ == '__main__':
 ###############################################################
 # TO DO LIST:
     # Unit testing
-    # Docstring everything properly. Look at online examples
     # README.md
     # Make the setup files, complete the package for publishing
     # Create __main__

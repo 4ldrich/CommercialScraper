@@ -592,12 +592,14 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Unit testing
+    # Unit testing for Scraper
+    # Unit testing for data_save...?
+    # Make times dynamic for slow, med and fast internet
+    # Maybe take getting the main site out of init and put into get categories
+    # Create __main__
+    # Containerise in docker image
     # README.md
     # Make the setup files, complete the package for publishing
-    # Create __main__
-    # Make times dynamic for slow, med and fast internet
-    # Containerise in docker image
     # Is it possible to make this faster?? Threading?
      
 

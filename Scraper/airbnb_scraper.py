@@ -1,14 +1,14 @@
 """
 FINISH WHEN DATA DESCISION HAS BEEN MADE
 """
-import urllib.request
 from bs4 import BeautifulSoup
+import sys
+sys.path.append('../')
 from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-import os
-from data_save import Save
+from Scraper.data_save import Save
 
 class Scraper:
     def __init__(self):
@@ -36,12 +36,6 @@ class Scraper:
         self.main_url = "https://www.airbnb.co.uk/"
         self.driver = None
 
-        ### TODO: LET'S RETHINK THIS. 
-        # Making destination paths for data to be stored
-        # os.mkdir('data')
-        # os.mkdir('data/alphanumeric')
-        # os.mkdir('data/images')
-
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -54,7 +48,6 @@ class Scraper:
 
         sleep(3)
         self._cookie_check_and_click()
-
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
         flexible_button.click()
@@ -206,7 +199,7 @@ class Scraper:
 
 
                 # Store all links for locations listed on page in array
-                places_container = homePage_soup.find('div', class_ = '_ty2eq0')
+                places_container = homePage_soup.find('div', class_ = '_1teg00s')
                 places = places_container.find_all('div', class_= '_1kmzzkf')
                 product_links = np.array([])
                 for place in places:
@@ -222,7 +215,7 @@ class Scraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_p76cpas") is not None
+                return self.driver.find_element_by_class_name("_1qbm6oii") is not None
             except:
                 pass
         return False
@@ -233,7 +226,7 @@ class Scraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_p76cpas")
+            cookie_button= self.driver.find_element_by_class_name("_1qbm6oii")
             cookie_button.click()
             sleep(0.5)
             return True
@@ -303,7 +296,7 @@ class Scraper:
                     if label[-1] != 's':
                         label += 's'
                     # The output is a list of tuples: [('guests', x), ('bedrooms', x) ...] 
-                    output.append((label, val.split()[0]))
+                    output.append((label, float(val.split()[0])))
             return output
         
 
@@ -315,7 +308,7 @@ class Scraper:
             # Split up the number and reviews string into [x, 'Reviews']
             text = text.split(' ')
             output =  text[0]
-            return output
+            return int(output)
         
 
         elif str_type == 'amenities':
@@ -329,10 +322,6 @@ class Scraper:
 
 
     def __scrape_product_images(self, driver, ID):
-        os.mkdir('data/images/'+ str(ID))
-
-
-        sleep(0.33)
         homePage_html = driver.find_element_by_xpath('//*')
         homePage_html = homePage_html.get_attribute('innerHTML')
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
@@ -341,20 +330,25 @@ class Scraper:
         if images is None:
             raise Exception
 
-        char_no = 97
+        sources = []
         for image in images:
-            image_src = image['src']
-            urllib.request.urlretrieve(image_src,'data/images/' + str(ID) + '/' + str(ID) + chr(char_no) + '.png')
-            char_no +=1
-
+            sources.append(image['src'])
+        
+        return tuple(sources)
+            
 
     def scrape_product_data(self, product_url, ID, category):
         """Gets a page of an Airbnb product and scrapes structured and unstructured data.
 
         WRITING THIS LATER DEPENDING ON WHAT I DECIDE ABOUT DATA STORAGE
         """
-
         self._cookie_check_and_click()
+
+        # Luxe category is worthless!
+        if category == 'Luxe':
+            return None, ()
+
+
 
         # Initialising default dict and adding the passed ID and 
         # category parameters
@@ -366,12 +360,15 @@ class Scraper:
         self.driver.get(product_url)
         sleep(0.33)
 
-        # for i in range(self.BATCH_ATTEMPTS):
-        #     try:
-        #         self.__scrape_product_images(self.driver, ID)
-        #         break
-        #     except:
-        #         continue
+        for i in range(self.BATCH_ATTEMPTS):
+            try:
+                image_data = self.__scrape_product_images(self.driver, ID)
+                if image_data[1]:
+                    break
+                else:
+                    raise Exception
+            except:
+                continue
 
 
         # Getting data from page. Looped through multiple attempts 
@@ -439,7 +436,7 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
-                        product_dict['Overall_Rate'] = overall_rating
+                        product_dict['Overall_Rate'] = float(overall_rating)
                         break
                     except:
                         continue
@@ -451,7 +448,8 @@ class Scraper:
                         homePage_html = homePage_html.get_attribute('innerHTML')
                         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
                         price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
-                        product_dict['Price_Night'] = price_pNight
+                        price_pNight = price_pNight.replace(',', '')
+                        product_dict['Price_Night'] = float(price_pNight)
                         break
                     except:
                         continue
@@ -468,7 +466,7 @@ class Scraper:
                         for subrating in subratings:
                             if subrating.div.div.div.text:
                                 product_dict[subrating.div.div.div.text + '_rate'] = \
-                                    subrating.div.div.div.nextSibling.text
+                                    float(subrating.div.div.div.nextSibling.text)
                         break
                     except:
                         continue
@@ -504,7 +502,7 @@ class Scraper:
             except:
  
                 continue
-        return product_dict
+        return product_dict, image_data
 
 
     def scrape_all(self, sample = False):
@@ -517,12 +515,12 @@ class Scraper:
         # Primary key, pandas dataframe and a missing data count initialised
         ID = 1000
         df = pd.DataFrame()
+        image_dict = dict()
 
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
         to_count = 2 if sample else 25
-        # filename = 'products_sample.csv' if sample else 'products.csv'
 
         try: 
             # Getting the zipped object of header names and urls
@@ -539,26 +537,33 @@ class Scraper:
                 for prod_url in links:
                     try:
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product = self.scrape_product_data(prod_url, ID, header)
+                        product, images = self.scrape_product_data(prod_url, ID, header)
                         df = df.append(product, ignore_index=True)
+                        image_dict[ID] = images
                         ID += 1
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
+                        print(f'Error on product{ID}: {e}')
                         ID += 1
-                        print(e)
         finally:
             # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
             self.driver.quit()
-            return df
+            return df, image_dict
 
 
 
 def main():
     scraper = Scraper()
-    product_df = scraper.scrape_all(sample=True)
-    print(product_df)
-    save = Save(product_df)
-    save.df_to_csv('sampleC')
+    a_df, images = scraper.scrape_all(sample=True)
+
+    save = Save(a_df, images)
+    save.images_to_local()
+    save.df_to_csv('test')
+    save.df_to_json('yep')
+
+
+
+
 
 if __name__ == '__main__':
     main()
@@ -566,13 +571,16 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Make and complete data handling module. Adjust main 2 function returns accordingly.
     # Unit testing
     # Docstring everything properly. Look at online examples
-    # Re-think how images are handled
     # Make the setup files, complete the package for publishing
+    # README.md
     # Is it possible to make this faster?? Threading?
-    
+
+    # Create __main__
+    # Make times dynamic for slow, med and fast internet
+    # Containerise in docker image
+     
 
     
 

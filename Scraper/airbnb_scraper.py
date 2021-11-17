@@ -348,8 +348,6 @@ class Scraper:
         if category == 'Luxe':
             return None, ()
 
-
-
         # Initialising default dict and adding the passed ID and 
         # category parameters
         product_dict = dict()
@@ -555,14 +553,7 @@ class Scraper:
 def main():
     scraper = Scraper()
     a_df, images = scraper.scrape_all(sample=True)
-
     save = Save(a_df, images)
-    save.images_to_local()
-    save.df_to_csv('test')
-    save.df_to_json('yep')
-
-
-
 
 
 if __name__ == '__main__':
@@ -573,13 +564,12 @@ if __name__ == '__main__':
 # TO DO LIST:
     # Unit testing
     # Docstring everything properly. Look at online examples
-    # Make the setup files, complete the package for publishing
     # README.md
-    # Is it possible to make this faster?? Threading?
-
+    # Make the setup files, complete the package for publishing
     # Create __main__
     # Make times dynamic for slow, med and fast internet
     # Containerise in docker image
+    # Is it possible to make this faster?? Threading?
      
 
     

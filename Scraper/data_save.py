@@ -225,8 +225,6 @@ def main():
                     'weapon': ['sai', 'bo staff']})
     print(df)
     x = Save(df, None)
-    x.df_to_json('yep')
-
 
 if __name__ == '__main__':
     main()

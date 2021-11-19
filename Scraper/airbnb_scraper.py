@@ -46,17 +46,6 @@ class Scraper:
         self.driver = webdriver.Chrome(options=options)
 
 
-        # Getting the Airbnb url and clicking past the cookie wall
-        self.driver.get(self.main_url)
-
-        sleep(3)
-        self._cookie_check_and_click()
-        # Click the I'm flexible to get to the product browser 
-        flexible_button = self.driver.find_element_by_link_text("I’m flexible")
-        flexible_button.click()
-        sleep(3)
-
-
     def get_categories(self, count : int = 25):
         """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
         
@@ -83,6 +72,16 @@ class Scraper:
             If the count parameter is 0, negative, or greater than 25 (the total number of headers)
         
         """
+        # Getting the Airbnb url and clicking past the cookie wall
+        self.driver.get(self.main_url)
+
+        sleep(3)
+        self._cookie_check_and_click()
+        # Click the I'm flexible to get to the product browser 
+        flexible_button = self.driver.find_element_by_link_text("I’m flexible")
+        flexible_button.click()
+        sleep(3)
+
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
@@ -361,6 +360,7 @@ class Scraper:
         """
         self._cookie_check_and_click()
 
+
         # Luxe category is worthless!
         if category == 'Luxe':
             return None, ()
@@ -583,7 +583,7 @@ class Scraper:
 def main():
     scraper = Scraper()
     a_df, images = scraper.scrape_all(sample=True)
-    save = Save(a_df, images)
+    print(a_df)
 
 
 if __name__ == '__main__':

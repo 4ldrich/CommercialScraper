@@ -14,7 +14,7 @@ from time import sleep
 from Scraper.data_save import Save
 
 class Scraper:
-    def __init__(self):
+    def __init__(self, slow_internet_speed : bool = False):
         """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
         When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
@@ -26,18 +26,25 @@ class Scraper:
         BATCH_ATTEMPTS : int
             It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
             for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
-            offers 30 attempts for the Scraper to locate and pull data from each element it is looking 
-            for, until the Scraper assumes that the element doesn't exist in the particular page.
+            offers up to 25 attempts for the Scraper to locate and pull data from each element it is looking 
+            for, until the Scraper assumes that the element doesn't exist in the particular page. If 
+            `slow_internet_speed` is enabled, the attempts limit is increased to 50.
         main_url : str
             The URL for Airbnb's home page, provided for the Selenium webdriver to get upon initialization
             of the Scraper object.
         driver : Selenium Webdriver
             The webdriver that is utilized to crawl through Airbnb's website
+        slow_internet_speed : bool, default=False
+            The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
+            particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
+            allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
+            scraper (`scrape_all()`) with `slow_internet_speed` enabled. This will take > 12 hours. 
 
         """
-        self.BATCH_ATTEMPTS = 30
         self.main_url = "https://www.airbnb.co.uk/"
+        self.slow_internet_speed = slow_internet_speed
         self.driver = None
+        self.BATCH_ATTEMPTS = 50 if self.slow_internet_speed else 25
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -75,12 +82,12 @@ class Scraper:
         # Getting the Airbnb url and clicking past the cookie wall
         self.driver.get(self.main_url)
 
-        sleep(3)
+        sleep(5 if self.slow_internet_speed else 2)
         self._cookie_check_and_click()
         # Click the I'm flexible to get to the product browser 
         flexible_button = self.driver.find_element_by_link_text("I’m flexible")
         flexible_button.click()
-        sleep(3)
+        sleep(5 if self.slow_internet_speed else 2)
 
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
@@ -118,11 +125,11 @@ class Scraper:
                 if counted == count:
                     return zip(categories, category_links)
 
-            sleep(1)
+            sleep(3 if self.slow_internet_speed else 1)
 
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
-                sleep(0.5)
+                sleep(1.5 if self.slow_internet_speed else 0.5)
                 more_menu = header_container.find_element_by_class_name('_jvh3iol')
                 more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
 
@@ -134,11 +141,11 @@ class Scraper:
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
                     more_menu = header_container.find_element_by_class_name('_jvh3iol')
                     more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
-                    sleep(0.5)
+                    sleep(1.5 if self.slow_internet_speed else 0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)
                     more_headers[j].click()
-                    sleep(0.5)
+                    sleep(1.5 if self.slow_internet_speed else 0.5)
                     # After clicking that header, get the corresponding header url for it
                     category_links.append(self.driver.current_url)
                     headers[i].click()
@@ -183,14 +190,15 @@ class Scraper:
             A numpy array of strings containing the urls for each product that has been found.
         """
         self.driver.get(header_url)
-        sleep(0.5)
+        sleep(1.5 if self.slow_internet_speed else 0.5)
         self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
-        sleep(3)
+        sleep(5 if self.slow_internet_speed else 2)
 
         # Set to FALSE when testing/sampling
         if SCROLLING:
-            self.__scroll(self.driver, 4)
+            pause_time = 7 if self.slow_internet_speed else 3.5
+            self.__scroll(self.driver, pause_time)
 
         for i in range(self.BATCH_ATTEMPTS):
             try:
@@ -230,7 +238,7 @@ class Scraper:
         if self.__is_cookie_button_present():
             cookie_button= self.driver.find_element_by_class_name("_1qbm6oii")
             cookie_button.click()
-            sleep(0.5)
+            sleep(1.5 if self.slow_internet_speed else 0.5)
             return True
         else:
             return False
@@ -373,7 +381,7 @@ class Scraper:
 
         # Getting the product page with driver
         self.driver.get(product_url)
-        sleep(0.33)
+        sleep(3 if self.slow_internet_speed else 0.5)
 
         for i in range(self.BATCH_ATTEMPTS):
             try:
@@ -509,7 +517,7 @@ class Scraper:
                     or product_dict['Location'] == None\
                     or product_dict['url'] == None:
                     print('test')
-                    sleep(0.1)
+                    sleep(1 if self.slow_internet_speed else 0.25)
                     raise ValueError
                 else:
                     break
@@ -581,7 +589,7 @@ class Scraper:
 
 
 def main():
-    scraper = Scraper()
+    scraper = Scraper(slow_internet_speed=True)
     a_df, images = scraper.scrape_all(sample=True)
     print(a_df)
 

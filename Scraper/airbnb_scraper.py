@@ -11,7 +11,7 @@ from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-from Scraper.data_save import Save
+from data_save import Save
 
 class Scraper:
     def __init__(self, slow_internet_speed : bool = False):
@@ -556,7 +556,7 @@ class Scraper:
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
-        to_count = 2 if sample else 25
+        to_count = 3 if sample else 25
 
         try: 
             # Getting the zipped object of header names and urls
@@ -589,9 +589,10 @@ class Scraper:
 
 
 def main():
-    scraper = Scraper(slow_internet_speed=True)
-    a_df, images = scraper.scrape_all(sample=True)
-    print(a_df)
+    #scraper = Scraper(slow_internet_speed=True)
+    #a_df, images = scraper.scrape_all(sample=True)
+    pass
+
 
 
 if __name__ == '__main__':

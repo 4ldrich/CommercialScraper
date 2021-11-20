@@ -218,13 +218,13 @@ class Save:
                     char_no+=1
 
 
-
 def main():
     df = pd.DataFrame({'name': ['Raphael', 'Donatello'],
                     'mask': ['red', 'purple'],
                     'weapon': ['sai', 'bo staff']})
     print(df)
     x = Save(df, None)
+
 
 if __name__ == '__main__':
     main()

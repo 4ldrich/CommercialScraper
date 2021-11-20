@@ -5,9 +5,6 @@ from Scraper.airbnb_scraper import Scraper
 from bs4 import BeautifulSoup
 from time import sleep
 
-
-# Not in the test folder for now. Having trouble importing from parallel directories for some reason...
-
 class ScraperTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.scraper = Scraper()
@@ -32,7 +29,7 @@ class ScraperTestCase(unittest.TestCase):
         homePage_soup = BeautifulSoup(homePage_html, 'lxml')
 
         # Checking if 'info' functionality produces correct output
-        expected_info = [('guests', '2'), ('bedrooms', '1'), ('beds', '1'), ('bathrooms', '1')]
+        expected_info = [('guests', 2.0), ('bedrooms', 1.0), ('beds', 1.0), ('bathrooms', 1.0)]
         actual_info = self.scraper.string_clean(homePage_soup.find('div', {'class': '_xcsyj0'}).next_sibling.text, 
                             str_type = 'info')
         self.assertEqual(expected_info, actual_info)

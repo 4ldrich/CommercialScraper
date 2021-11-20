@@ -589,9 +589,12 @@ class Scraper:
 
 
 def main():
-    #scraper = Scraper(slow_internet_speed=True)
-    #a_df, images = scraper.scrape_all(sample=True)
-    pass
+    scraper = Scraper(slow_internet_speed=False)
+    a_df, images = scraper.scrape_all(sample=True)
+    saver = Save(a_df, images)
+    saver.df_to_csv('test')
+    saver.images_to_local()
+   
 
 
 
@@ -601,15 +604,9 @@ if __name__ == '__main__':
 
 ###############################################################
 # TO DO LIST:
-    # Unit testing for Scraper
-    # Unit testing for data_save...?
-    # Make times dynamic for slow, med and fast internet
-    # Maybe take getting the main site out of init and put into get categories
-    # Create __main__
     # Containerise in docker image
     # README.md
     # Make the setup files, complete the package for publishing
-    # Is it possible to make this faster?? Threading?
      
 
     

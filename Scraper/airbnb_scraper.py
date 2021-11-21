@@ -15,7 +15,7 @@ from data_save import Save
 import uuid
 
 class Scraper:
-    def __init__(self, slow_internet_speed : bool=False, config : str='default'):
+    def __init__(self, slow_internet_speed : bool=False, config : str='default', messages : bool=False):
         """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
         When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
@@ -30,7 +30,9 @@ class Scraper:
             allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
             scraper `scrape_all()` with `slow_internet_speed` enabled. This will take > 12 hours.
         config : str, defualt = 'default'
-            DESCRIPTION HERE ====================== remember ^ the 'belongs to'
+            Option to confiigure the selenium webdriver to operate in 'headless' mode or 'default' mode.
+        messages : bool, default=False
+            Option to activate messages of each successful item saved by the scraper, and any errors if applied.
 
         Attributes
         ----------
@@ -45,17 +47,20 @@ class Scraper:
             of the Scraper object.
         driver : Selenium Webdriver
             The webdriver that is utilized to crawl through Airbnb's website
-        slow_internet_speed : bool, default=False
+        slow_internet_speed : bool
             The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
             particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
             allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
             scraper `scrape_all()` with `slow_internet_speed` enabled. This will take > 12 hours. 
+        messages : bool
+            Option to activate messages of each successful item saved by the scraper, and any errors if applied.
 
         """
         self.main_url = "https://www.airbnb.co.uk/"
         self.slow_internet_speed = slow_internet_speed
         self.driver = None
         self.BATCH_ATTEMPTS = 50 if self.slow_internet_speed else 25
+        self.messages = messages
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -65,10 +70,13 @@ class Scraper:
             self.driver = webdriver.Chrome(options=options)
         elif config == 'headless':
             options.add_argument('--no-sandbox')
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            options.add_argument('--log-level=3')
             options.add_argument('--headless')
             options.add_argument('--disable-gpu')
             options.add_argument("--window-size=1920, 1200")
             self.driver = webdriver.Chrome(options=options)
+            print('Running headless scraper. Do NOT close the program or interrupt the terminal.')
         else:
             raise ValueError(f'Configuration option "{config}" not recognised')
 
@@ -363,10 +371,10 @@ class Scraper:
         for image in images:
             sources.append(image['src'])
         
-        return tuple(sources)
+        return sources
             
 
-    def scrape_product_data(self, product_url: str, ID : uuid.uuid4, category : str):
+    def scrape_product_data(self, product_url: str, ID : uuid.uuid4, category : str, message : bool=False):
         """Gets a page of an Airbnb product and scrapes structured and unstructured data. Utilises both Selenium and BeautifulSoup.
 
         Parameters
@@ -377,12 +385,15 @@ class Scraper:
             The unique ID assigned to the particular product. This will be used to identify the data in a database/data lake.
         category : str
             The category name corresponding to where a product is found. This can be read on the headers tab on Airbnb's website.
+        message : bool, default=False
+            With the `message` flag enabled, the product scrape status will be logged to the terminal, as well as whether any
+            images were saved.
 
         Returns
         -------
         product_dict : dict of {str : any}
             Structured data stored in the form of a dictionary containing relevant and human readable information about the product.
-        image_data : tuple of (str, str, ...)
+        image_data : list of [str, str, ...]
             A tuple of source links for the images found on Airbnb's website. These can be transformed into image files.
 
         """
@@ -406,7 +417,7 @@ class Scraper:
         for i in range(self.BATCH_ATTEMPTS):
             try:
                 image_data = self.__scrape_product_images(self.driver)
-                if image_data[1]:
+                if image_data:
                     break
                 else:
                     raise Exception
@@ -543,8 +554,14 @@ class Scraper:
                     break
             
             except:
- 
                 continue
+ 
+        if message:
+            if image_data:
+                print(f'Logged product "{title}" as {ID}. Images found: {len(image_data)}')
+            else:
+                print(f'Logged product "{title}" as {ID}. FAILED TO SAVE IMAGES.')
+
         return product_dict, image_data
 
 
@@ -557,7 +574,7 @@ class Scraper:
         Parameters
         ----------
         sample : bool, default=True
-            Scraping the entirety of Airbnb's products hub is a large task. The `sample` locig, when set to true, severely restricts the number of products
+            Scraping the entirety of Airbnb's products hub is a large task. The `sample` logic, when set to true, severely restricts the number of products
             that the crawler will try to scrape, in the event that one simply wishes to only scrape a few products, or quickly test that the module is functioning.
 
         Returns
@@ -576,7 +593,7 @@ class Scraper:
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
-        to_count = 3 if sample else 25
+        to_count = 1 if sample else 25
 
         try: 
             # Getting the zipped object of header names and urls
@@ -594,14 +611,13 @@ class Scraper:
                     try:
                         ID = uuid.uuid4()
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
-                        product, images = self.scrape_product_data(prod_url, ID, header)
+                        product, images = self.scrape_product_data(prod_url, ID, header, message=self.messages)
                         df = df.append(product, ignore_index=True)
                         image_dict[ID] = images
-                        #ID += 1
+       
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
                         print(f'Error on product{ID}: {e}')
-                        #ID += 1
         finally:
             # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
             self.driver.quit()
@@ -610,29 +626,21 @@ class Scraper:
 
 
 def main():
-    scraper = Scraper(slow_internet_speed=False)
+    scraper = Scraper(slow_internet_speed=False, config='default', messages=False)
     a_df, images = scraper.scrape_all(sample=True)
     saver = Save(a_df, images)
     saver.df_to_csv('test')
     saver.images_to_local()
    
 
-
-
 if __name__ == '__main__':
-    scraper = Scraper()
-    df, imgs = scraper.scrape_all(sample=True)
-    saver = Save(df, imgs)
-    saver.df_to_csv('test')
-    saver.images_to_local()
+    main()
 
 
 ###############################################################
 # TO DO LIST:
-    # Containerise in docker image
-    # README.md
+    # Make selenium work with Docker Image!!!!
+    # Get it to run with Prometheus, Grafana
+
     # Make the setup files, complete the package for publishing
-     
-
-    
-
+    # README.md

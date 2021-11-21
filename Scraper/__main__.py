@@ -118,8 +118,3 @@ if s3_img_desc.lower() == 'y' or s3_img_desc.lower() == 'yes':
         print(e)
 
 
-###############################################################
-# TO DO LIST:
-    # write requirements.txt
-    # containerise in a docker file
-    # test it!

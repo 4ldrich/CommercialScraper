@@ -48,5 +48,5 @@ class ScraperTestCase(unittest.TestCase):
             str_type='amenities')
         self.assertEqual(expected_amens, actual_amens)
 
-    
+
 unittest.main(argv=[''], verbosity=0, exit=False)

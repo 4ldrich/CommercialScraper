@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from time import sleep
 from data_save import Save
+import uuid
 
 class Scraper:
     def __init__(self, slow_internet_speed : bool = False):
@@ -346,7 +347,7 @@ class Scraper:
         return tuple(sources)
             
 
-    def scrape_product_data(self, product_url: str, ID : int, category : str):
+    def scrape_product_data(self, product_url: str, ID : uuid.uuid4, category : str):
         """Gets a page of an Airbnb product and scrapes structured and unstructured data. Utilises both Selenium and BeautifulSoup.
 
         Parameters
@@ -549,7 +550,7 @@ class Scraper:
 
         """
         # Primary key, pandas dataframe and a missing data count initialised
-        ID = 1000
+        #ID = 1000
         df = pd.DataFrame()
         image_dict = dict()
 
@@ -572,15 +573,16 @@ class Scraper:
                 # Iterating over each product url in a category
                 for prod_url in links:
                     try:
+                        ID = uuid.uuid4()
                         # Calling the scrape_product() function and logging data to the initialised pandas dataframe
                         product, images = self.scrape_product_data(prod_url, ID, header)
                         df = df.append(product, ignore_index=True)
                         image_dict[ID] = images
-                        ID += 1
+                        #ID += 1
                     except Exception as e:
                         # When a product page fails to give information, this is logged as missing data and doesn't break code
                         print(f'Error on product{ID}: {e}')
-                        ID += 1
+                        #ID += 1
         finally:
             # Regardless of errors or interruptions, all yielded data is returned in a pandas dataframe
             self.driver.quit()
@@ -599,7 +601,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    scraper = Scraper()
+    df, imgs = scraper.scrape_all(sample=True)
+    saver = Save(df, imgs)
+    saver.df_to_csv('test')
+    saver.images_to_local()
 
 
 ###############################################################

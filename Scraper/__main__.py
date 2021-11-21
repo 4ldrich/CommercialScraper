@@ -94,7 +94,7 @@ if json_desc.lower() == 'y' or json_desc.lower() == 'yes':
     saver.df_to_json(json_name)
 
 # Save pkl
-if csv_desc.lower() == 'y' or csv_desc.lower() == 'yes':
+if pickle_desc.lower() == 'y' or csv_desc.lower() == 'yes':
     saver.df_to_pickle(pkl_name)
 
 # Save SQL

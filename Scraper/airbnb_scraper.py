@@ -15,12 +15,22 @@ from data_save import Save
 import uuid
 
 class Scraper:
-    def __init__(self, slow_internet_speed : bool = False):
+    def __init__(self, slow_internet_speed : bool=False, config : str='default'):
         """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
         When an instance of Scraper is initialized, a Selenium Webdriver gets the homepage by use
         of the `url` attribute. Then it clicks past the cookie wall (if applicable), and navigates onto
         the main products hub.
+
+        Parameters
+        ----------
+        slow_internet_speed : bool, default=False
+            The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
+            particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
+            allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
+            scraper `scrape_all()` with `slow_internet_speed` enabled. This will take > 12 hours.
+        config : str, defualt = 'default'
+            DESCRIPTION HERE ====================== remember ^ the 'belongs to'
 
         Attributes
         ----------
@@ -39,7 +49,7 @@ class Scraper:
             The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
             particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
             allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
-            scraper (`scrape_all()`) with `slow_internet_speed` enabled. This will take > 12 hours. 
+            scraper `scrape_all()` with `slow_internet_speed` enabled. This will take > 12 hours. 
 
         """
         self.main_url = "https://www.airbnb.co.uk/"
@@ -49,9 +59,18 @@ class Scraper:
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
-        options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        options.add_argument("--start-maximized")
-        self.driver = webdriver.Chrome(options=options)
+        if config == 'default':
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            options.add_argument("--start-maximized")
+            self.driver = webdriver.Chrome(options=options)
+        elif config == 'headless':
+            options.add_argument('--no-sandbox')
+            options.add_argument('--headless')
+            options.add_argument('--disable-gpu')
+            options.add_argument("--window-size=1920, 1200")
+            self.driver = webdriver.Chrome(options=options)
+        else:
+            raise ValueError(f'Configuration option "{config}" not recognised')
 
 
     def get_categories(self, count : int = 25):

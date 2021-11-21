@@ -184,7 +184,7 @@ class Save:
             ID = str(k)
             os.mkdir('data/unstructured/'+ str(ID))
             for image_src in v:
-                urllib.request.urlretrieve(image_src,'data/unstructured/' + ID + '/' + ID + chr(char_no) + '.png')
+                urllib.request.urlretrieve(image_src,'data/unstructured/' + ID + '/' + ID + '-' + chr(char_no) + '.png')
                 char_no+=1
 
 
@@ -213,8 +213,8 @@ class Save:
                 ID = str(k)
                 char_no = 97
                 for image_src in v:
-                    urllib.request.urlretrieve(image_src, f'{tmp}/{ID}{chr(char_no)}.png')
-                    self.s3_client.upload_file(f'{tmp}/{ID}{chr(char_no)}.png', bucket_name, f'{upload_name}/{ID}/{ID}{chr(char_no)}.png')
+                    urllib.request.urlretrieve(image_src, f'{tmp}/{ID}-{chr(char_no)}.png')
+                    self.s3_client.upload_file(f'{tmp}/{ID}-{chr(char_no)}.png', bucket_name, f'{upload_name}/{ID}/{ID}-{chr(char_no)}.png')
                     char_no+=1
 
 

@@ -605,6 +605,7 @@ if __name__ == '__main__':
 ###############################################################
 # TO DO LIST:
     # Containerise in docker image
+    # Replace number id with uuid4 for both products and images
     # README.md
     # Make the setup files, complete the package for publishing
      

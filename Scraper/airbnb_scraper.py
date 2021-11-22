@@ -4,8 +4,6 @@ Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate an
 without the use of an API.
 """
 from bs4 import BeautifulSoup
-import sys
-sys.path.append('../')
 import selenium
 from selenium import webdriver
 import numpy as np
@@ -14,7 +12,7 @@ from time import sleep
 from data_save import Save
 import uuid
 
-class Scraper:
+class AirbnbScraper:
     def __init__(self, slow_internet_speed : bool=False, config : str='default', messages : bool=False):
         """A Webscraper that crawls through Airbnb's website and gathers structured/unstructured data.
 
@@ -623,18 +621,6 @@ class Scraper:
             self.driver.quit()
             return df, image_dict
 
-
-
-def main():
-    scraper = Scraper(slow_internet_speed=False, config='default', messages=False)
-    a_df, images = scraper.scrape_all(sample=True)
-    saver = Save(a_df, images)
-    saver.df_to_csv('test')
-    saver.images_to_local()
-   
-
-if __name__ == '__main__':
-    main()
 
 
 ###############################################################

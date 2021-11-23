@@ -1,0 +1,8 @@
+selenium:
+    build: .
+    ports:
+        - 4000:4000
+        - 443:443
+    volumes:
+        - ./data/:/data/
+    privileged: true

@@ -73,6 +73,7 @@ class AirbnbScraper:
             options.add_argument('--headless')
             options.add_argument('--disable-gpu')
             options.add_argument("--window-size=1920, 1200")
+            options.add_argument('--disable-dev-shm-usage')
             self.driver = webdriver.Chrome(options=options)
             print('Running headless scraper. Do NOT close the program or interrupt the terminal.')
         else:

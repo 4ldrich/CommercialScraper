@@ -1,17 +1,12 @@
-#Ignore the logs directory
-logs/
-
-#Ignoring the password file
-passwords.txt
-
-#Ignoring git and cache folders
+#Ignoring git, cache and configuration files
 .git
 .gitignore
 .cache
+.toml
+.cfg
 
 #Ignoring all the markdown and class files
 *.md
-**/*.class
 
 # ignoring test units
 tests/

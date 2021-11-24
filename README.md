@@ -15,7 +15,7 @@ from airbnbscraper.Scraper import AirbnbScraper
 scraper = AirbnbScraper()
 
 # Returns a dictionary of structured data and a list of image sources for a single product page
-product_dict, imgs = scraper.scrape_product_data('https://any/airbnb/product/page', any_ID, 'Any Category Name you wish')
+product_dict, imgs = scraper.scrape_product_data('https://any/airbnb/product/page', any_ID_you_wish, 'Any Category Label you wish')
 
 # Returns a dataframe of product entries as well as a dictionary of image sources pertaining to each product entry
 df, imgs = scraper.scrape_all()

@@ -11,3 +11,4 @@
 # ignoring test units
 tests/
 
+oldmain.py

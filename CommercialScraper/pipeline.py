@@ -9,7 +9,7 @@ from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-#from Pipeline.data_save import Save
+#from data_save import Save
 import uuid
 
 class AirbnbScraper:
@@ -626,9 +626,6 @@ class AirbnbScraper:
 
 ###############################################################
 # TO DO LIST:
-    # Package Publishes Correctly, now name properly, brush up readme.md and fully test imports
-
-    # Get docker image to work with downloading to SQL and download images locally
+    # Get docker image to work with downloading to SQL and download data locally
     # Get Docker image to run on EC2
-    # (Get it to run with Prometheus, Grafana)
 

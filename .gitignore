@@ -108,4 +108,6 @@ venv.bak/
 .mypy_cache/
 
 # Dockerfile
-#Dockerfile
+Dockerfile
+
+oldmain.py

@@ -13,10 +13,10 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY ./Pipeline ./Pipeline
+COPY ./CommercialScraper ./CommercialScraper
 
 ENV DISPLAY=:99
 
-CMD ["python", "./Pipeline"]
+CMD ["python", "./CommercialScraper"]
 
 

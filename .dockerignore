@@ -1,0 +1,14 @@
+#Ignoring git, cache and configuration files
+.git
+.gitignore
+.cache
+.toml
+.cfg
+
+#Ignoring all the markdown and class files
+*.md
+
+# ignoring test units
+tests/
+
+oldmain.py

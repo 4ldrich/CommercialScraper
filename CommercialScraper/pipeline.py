@@ -626,6 +626,9 @@ class AirbnbScraper:
 
 ###############################################################
 # TO DO LIST:
-    # Get docker image to work with downloading to SQL and download data locally
     # Get Docker image to run on EC2
+    # Prometheus and Grafana
+    # Run full scraper and save data everywhere
+    # Update dockerhub description
+    # Make Powerpoint Presentation
 

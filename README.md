@@ -31,7 +31,7 @@ saver.df_to_csv('any_filename')
 
 ```
 ## Docker Image 
-This package has been containerised in a docker image where it can be run as an application. Please note that data can only be stored onto an SQL database or on the cloud by this method, not in local directories.
+This package has been containerised in a docker image where it can be run as an application. Please note that data can only be stored on the cloud by this method, not locally.
 [Docker Image](https://hub.docker.com/r/docker4ldrich/airbnb-scraper)
 
 ```bash

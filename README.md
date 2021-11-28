@@ -11,7 +11,7 @@ pip install CommercialScraper
 ## Usage
 ```python
 from CommercialScraper.pipeline import AirbnbScraper
-from CommercialScraper.data_save import Save
+import CommercialScraper.data_processing
 
 scraper = AirbnbScraper()
 
@@ -22,12 +22,20 @@ product_dict, imgs = scraper.scrape_product_data('https://any/airbnb/product/pag
 df, imgs = scraper.scrape_all()
 
 
-# Initialise an instance of the saver object to save yielded data where you wish
-saver = Save(df, imgs)
-
 # Saves the dataframe to a csv in your local directory inside a created 'data/' folder. 
-# Structured data can be saved in numerous formats, image data can only be saved in .png files
-saver.df_to_csv('any_filename')
+data_processing.df_to_csv(df, 'any_filename')
+
+# Saves images locally
+data_processing.images_to_local(images)
+
+# Saves structured data to sql database
+data_processing.df_to_sql(df, table_name, username, password, hostname, port, database)
+
+# Saves structured data to AWS cloud services s3 bucket
+data_processing.df_to_s3(df, aws_access_key_id, region_name, aws_secret_access_key, bucket_name, upload_name)
+
+# Saves images to AWS cloud services s3 bucket
+data_processing.images_to_s3(source_links, aws_access_key_id,region_name, aws_secret_access_key, bucket_name, upload_name)
 
 ```
 ## Docker Image 

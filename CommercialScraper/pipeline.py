@@ -9,7 +9,7 @@ from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-#from data_save import Save
+import data_processing
 import uuid
 
 class AirbnbScraper:
@@ -623,12 +623,4 @@ class AirbnbScraper:
             return df, image_dict
 
 
-
-###############################################################
-# TO DO LIST:
-    # Get Docker image to run on EC2
-    # Prometheus and Grafana
-    # Run full scraper and save data everywhere
-    # Update dockerhub description
-    # Make Powerpoint Presentation
 

@@ -1,6 +1,6 @@
 beautifulsoup4==4.10.0
 boto3==1.20.10
-botocore==1.23.10
+botocore==1.22.8
 greenlet==1.1.2
 jmespath==0.10.0
 lxml==4.6.4

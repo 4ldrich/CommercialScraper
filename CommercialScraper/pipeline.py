@@ -251,7 +251,7 @@ class AirbnbScraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_1qbm6oii") is not None
+                return self.driver.find_element_by_xpath("_1qbm6oii") is not None
             except:
                 pass
         return False
@@ -624,9 +624,9 @@ class AirbnbScraper:
 
 # test shit. get rid when uploading to pypi
 def main():
-    scraper = AirbnbScraper( slow_internet_speed=False, config = 'default', messages=False)
+    scraper = AirbnbScraper(slow_internet_speed=False, config = 'default', messages=False)
     scraper.get_categories()
-    
+
 
 if __name__ == '__main__':
     main()
@@ -634,7 +634,9 @@ if __name__ == '__main__':
 
 #########################
 # TO DO LIST:
-    # Change all findbys to something other than class names. Something that is less high maintenance with updates.
+    # Change all findbys to latest syntax and also something other than class names. Something that is less high maintenance with updates.
+    # This will involve updating selenium dependency on setup.py to > =4.1.0
+
     # Branch to other websites, create new classes for them.
-    # proxies.....?
     # thread
+    # proxies.....?

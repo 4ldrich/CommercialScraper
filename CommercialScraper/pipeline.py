@@ -1,6 +1,5 @@
 """
-A melded crawler and scraper which acts as the head of the data pipeline of Airbnb's product data scraping. 
-Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate and collect data from the website, 
+Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate and collect data from website, 
 without the use of an API.
 """
 from bs4 import BeautifulSoup
@@ -9,7 +8,7 @@ from selenium import webdriver
 import numpy as np
 import pandas as pd
 from time import sleep
-import data_processing
+import data_processing # get rid when uploading #
 import uuid
 
 class AirbnbScraper:
@@ -120,7 +119,7 @@ class AirbnbScraper:
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
         if count > 25:
-            raise ValueError('Max amount of headers on Airbnb\'s website is 25')
+            count = 25
         if count < 1:
             raise ValueError('Count must be a positive integer greater than 1')
 
@@ -623,4 +622,19 @@ class AirbnbScraper:
             return df, image_dict
 
 
+# test shit. get rid when uploading to pypi
+def main():
+    scraper = AirbnbScraper( slow_internet_speed=False, config = 'default', messages=False)
+    scraper.get_categories()
+    
 
+if __name__ == '__main__':
+    main()
+
+
+#########################
+# TO DO LIST:
+    # Change all findbys to something other than class names. Something that is less high maintenance with updates.
+    # Branch to other websites, create new classes for them.
+    # proxies.....?
+    # thread

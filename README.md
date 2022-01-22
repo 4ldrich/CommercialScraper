@@ -1,6 +1,8 @@
-# Airbnb Scraper
+# Commercial Scraper
 
-A fully dynamic and scalable data pipeline made in Python dedicated to scraping Airbnb's commercial website for both alphanumeric and image data, and saving both locally and/or on the cloud.
+A fully dynamic and scalable data pipeline made in Python dedicated to scraping commercial websites that don't offer API's. Can yield structured and unstructured data, and is able to save data both locally and/or on the cloud via the data processing module.
+
+Currently, the scraper is only built to scrape Airbnb's website, but more websites are in the works to generalise the package.
 
 ## Installation
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install CommercialScraper.

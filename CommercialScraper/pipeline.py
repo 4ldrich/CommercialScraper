@@ -5,6 +5,7 @@ without the use of an API.
 from bs4 import BeautifulSoup
 import selenium
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 import numpy as np
 import pandas as pd
 from time import sleep
@@ -79,7 +80,7 @@ class AirbnbScraper:
             raise ValueError(f'Configuration option "{config}" not recognised')
 
 
-    def get_categories(self, count : int = 25):
+    def get_categories(self, count : int):
         """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
         
         This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
@@ -102,7 +103,7 @@ class AirbnbScraper:
         Raises
         ------
         ValueError
-            If the count parameter is 0, negative, or greater than 25 (the total number of headers)
+            If the count parameter is 0 or negative
         
         """
         # Getting the Airbnb url and clicking past the cookie wall
@@ -111,25 +112,25 @@ class AirbnbScraper:
         sleep(5 if self.slow_internet_speed else 2)
         self._cookie_check_and_click()
         # Click the I'm flexible to get to the product browser 
-        flexible_button = self.driver.find_element_by_link_text("I’m flexible")
+        flexible_button = self.driver.find_element(By.LINK_TEXT,"I’m flexible")
         flexible_button.click()
         sleep(5 if self.slow_internet_speed else 2)
 
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
-        if count > 25:
-            count = 25
+        if count > 29: ### WRONG, MAKE MAX DYNAMIC
+            count = 29
         if count < 1:
             raise ValueError('Count must be a positive integer greater than 1')
 
-        self._cookie_check_and_click()
+        #self._cookie_check_and_click()
 
-        # START of the headr yield code. This uses seleniums webdriver
+        # START of the header yield code. This uses seleniums webdriver
         # to both click through and catch the header names and urls of each of the
-        # 25 headers. BS4 cannot get their hrefs easily because they're 'buttons' on the site!
-        header_container = self.driver.find_element_by_class_name('_alkx2')
-        headers = header_container.find_elements_by_class_name('_e296pg')
+        header_container = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div/div/div/div/div[1]/div/nav/div/div/div/div/div[2]/div/div[1]/div/div[3]')
+        headers = header_container.find_elements(By.XPATH, "./*")
+        #more_class_name = headers[-2].get_attribute('class')
 
         # First, get the text for the headers up to the 'more'. (Not all headers are visible immediately)
         # if the count is lower than current visible headers, this is sliced at the bottom
@@ -139,6 +140,7 @@ class AirbnbScraper:
             categories.append(header.text)
         categories.remove('More')
         categories = categories[:count]
+
 
         # Click through the visible headers to get urls for each one (except for 'More')
         counted = 0
@@ -152,12 +154,15 @@ class AirbnbScraper:
                     return zip(categories, category_links)
 
             sleep(3 if self.slow_internet_speed else 1)
-
+            print(0)
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
                 sleep(1.5 if self.slow_internet_speed else 0.5)
-                more_menu = header_container.find_element_by_class_name('_jvh3iol')
-                more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
+                print(1)
+                more_menu = header_container.find_element(By.CLASS_NAME, '_jvh3iol')
+                print(2)
+                more_headers = more_menu.find_elements(By.CLASS_NAME,'_1r9yw0q6')
+                print(3)
 
                 # The offset means indexing goes 0, 0, 1, 2, 3, 4,... because of the nature of the 'More' column
                 for j in range(-1,len(more_headers)-1):
@@ -165,8 +170,8 @@ class AirbnbScraper:
                         j+=1
                     # Click the 'More' header and get the elements for rest of headers whilet they're visible
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
-                    more_menu = header_container.find_element_by_class_name('_jvh3iol')
-                    more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
+                    more_menu = header_container.find_element(By.CLASS_NAME, '_jvh3iol')
+                    more_headers = more_menu.find_elements(By.CLASS_NAME,'_1r9yw0q6')
                     sleep(1.5 if self.slow_internet_speed else 0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)
@@ -251,7 +256,7 @@ class AirbnbScraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_class_name("_1qbm6oii") is not None
+                return self.driver.find_element(By.XPATH, "//*[contains(text(), 'OK')]") is not None
             except:
                 pass
         return False
@@ -262,7 +267,7 @@ class AirbnbScraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_1qbm6oii")
+            cookie_button= self.driver.find_element(By.XPATH,"//*[contains(text(), 'OK')]")
             cookie_button.click()
             sleep(1.5 if self.slow_internet_speed else 0.5)
             return True
@@ -624,9 +629,9 @@ class AirbnbScraper:
 
 # test shit. get rid when uploading to pypi
 def main():
-    scraper = AirbnbScraper( slow_internet_speed=False, config = 'default', messages=False)
-    scraper.get_categories()
-    
+    scraper = AirbnbScraper(slow_internet_speed=False, config = 'default', messages=False)
+    scraper.scrape_all(False)
+
 
 if __name__ == '__main__':
     main()
@@ -634,7 +639,9 @@ if __name__ == '__main__':
 
 #########################
 # TO DO LIST:
-    # Change all findbys to something other than class names. Something that is less high maintenance with updates.
-    # Branch to other websites, create new classes for them.
-    # proxies.....?
+    # Change all findbys to latest syntax and also something other than class names. Something that is less high maintenance with updates.
+        # This will involve updating selenium dependency on setup.py to >= 4.1.0
     # thread
+    # proxies.....?
+
+    # Branch to other websites, create new classes for them.

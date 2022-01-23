@@ -130,7 +130,7 @@ class AirbnbScraper:
         # to both click through and catch the header names and urls of each of the
         header_container = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div/div/div/div/div[1]/div/nav/div/div/div/div/div[2]/div/div[1]/div/div[3]')
         headers = header_container.find_elements(By.XPATH, "./*")
-        #more_class_name = headers[-2].get_attribute('class')
+        headers.pop()
 
         # First, get the text for the headers up to the 'more'. (Not all headers are visible immediately)
         # if the count is lower than current visible headers, this is sliced at the bottom
@@ -154,15 +154,12 @@ class AirbnbScraper:
                     return zip(categories, category_links)
 
             sleep(3 if self.slow_internet_speed else 1)
-            print(0)
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
                 sleep(1.5 if self.slow_internet_speed else 0.5)
-                print(1)
-                more_menu = header_container.find_element(By.CLASS_NAME, '_jvh3iol')
-                print(2)
-                more_headers = more_menu.find_elements(By.CLASS_NAME,'_1r9yw0q6')
-                print(3)
+                more_menu = headers[i].find_element(By.XPATH, '//*[@id="flexible-destination-more-menu"]')
+                more_headers = more_menu.find_elements(By.XPATH, "./*")
+          
 
                 # The offset means indexing goes 0, 0, 1, 2, 3, 4,... because of the nature of the 'More' column
                 for j in range(-1,len(more_headers)-1):
@@ -170,8 +167,8 @@ class AirbnbScraper:
                         j+=1
                     # Click the 'More' header and get the elements for rest of headers whilet they're visible
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
-                    more_menu = header_container.find_element(By.CLASS_NAME, '_jvh3iol')
-                    more_headers = more_menu.find_elements(By.CLASS_NAME,'_1r9yw0q6')
+                    more_menu = headers[i].find_element(By.XPATH, '//*[@id="flexible-destination-more-menu"]')
+                    more_headers = more_menu.find_elements(By.XPATH, "./*")
                     sleep(1.5 if self.slow_internet_speed else 0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)

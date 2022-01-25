@@ -56,6 +56,7 @@ class AirbnbScraper:
         self.driver = None
         self.BATCH_ATTEMPTS = 50 if self.slow_internet_speed else 25
         self.messages = messages
+        self._cookie_class_name = None
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -240,18 +241,28 @@ class AirbnbScraper:
 
 
     def _cookie_check_and_click(self):
-        # Checks if a cookie button is present using the method __is_cookie_button_present()
-        # if there is one present, selenium driver will find and click it, else nothing happens
-        # (no error can be thrown either way, and this covers the base of possible cookie problems)
-        try:
-            all_buttons = self.driver.find_elements(By.TAG_NAME, 'button')
-            for button in all_buttons:
-                if button.find_element(By.XPATH, )
+        if self._cookie_class_name is None:
+            for i in range(self.BATCH_ATTEMPTS):
+                try:
+                    cookie_button = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div[2]/section/div[2]/div[2]/button')
+                    self._cookie_class_name = cookie_button.get_attribute('class')
+                    return
+                except Exception as e:
+                    print('TOP:', e)
+        else:
 
-
-        except Exception as e:
-            print(e)
-            pass
+            try:
+                cookie_button = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div[2]/section/div[2]/div[2]/button')
+                self._cookie_class_name = cookie_button.get_attribute('class')
+                return
+            except Exception as e:
+                print('MIDDLE', e)
+                try:
+                    cookie_button = self.driver.find_element(By.CLASS_NAME, self._cookie_class_name)
+                    return
+                except Exception as e:
+                    print('BOTTOM', e)
+                    pass
 
     @staticmethod 
     def string_clean(text: str, str_type : str) -> str:
@@ -577,5 +588,4 @@ class AirbnbScraper:
 
 
 scraper = AirbnbScraper()
-x = scraper.scrape_product_data('https://www.airbnb.co.uk/rooms/51345704?category_tag=Tag%3A8159&adults=1&check_in=2022-01-28&check_out=2022-02-04&previous_page_section_name=1000&federated_search_id=f6fa0125-ae3e-45f1-8671-8b17ba8406fb&guests=1'
-    ,10,'TEST')
+x = scraper.scrape_all(True)

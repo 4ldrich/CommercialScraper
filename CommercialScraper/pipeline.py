@@ -2,13 +2,12 @@
 Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate and collect data from website, 
 without the use of an API.
 """
-from bs4 import BeautifulSoup
 import selenium
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 import numpy as np
 import pandas as pd
 from time import sleep
-import data_processing # get rid when uploading #
 import uuid
 
 class AirbnbScraper:
@@ -79,7 +78,7 @@ class AirbnbScraper:
             raise ValueError(f'Configuration option "{config}" not recognised')
 
 
-    def get_categories(self, count : int = 25):
+    def get_categories(self, count : int):
         """Gets category names and corresponding urls for each product header in Airbnb's main products page. 
         
         This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
@@ -102,7 +101,7 @@ class AirbnbScraper:
         Raises
         ------
         ValueError
-            If the count parameter is 0, negative, or greater than 25 (the total number of headers)
+            If the count parameter is 0 or negative
         
         """
         # Getting the Airbnb url and clicking past the cookie wall
@@ -111,25 +110,25 @@ class AirbnbScraper:
         sleep(5 if self.slow_internet_speed else 2)
         self._cookie_check_and_click()
         # Click the I'm flexible to get to the product browser 
-        flexible_button = self.driver.find_element_by_link_text("I’m flexible")
+        flexible_button = self.driver.find_element(By.LINK_TEXT,"I’m flexible")
         flexible_button.click()
         sleep(5 if self.slow_internet_speed else 2)
 
         # The count variable is an input to stop the header yield at any given index of iteration
         # for example: if count was set to 3, then the loop below to collect header links/titles
         # would break on the third iteration.
-        if count > 25:
-            count = 25
+        if count > 29: ### WRONG, MAKE MAX DYNAMIC
+            count = 29
         if count < 1:
             raise ValueError('Count must be a positive integer greater than 1')
 
-        self._cookie_check_and_click()
+        #self._cookie_check_and_click()
 
-        # START of the headr yield code. This uses seleniums webdriver
+        # START of the header yield code. This uses seleniums webdriver
         # to both click through and catch the header names and urls of each of the
-        # 25 headers. BS4 cannot get their hrefs easily because they're 'buttons' on the site!
-        header_container = self.driver.find_element_by_class_name('_alkx2')
-        headers = header_container.find_elements_by_class_name('_e296pg')
+        header_container = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div/div/div/div/div[1]/div/nav/div/div/div/div/div[2]/div/div[1]/div/div[3]')
+        headers = header_container.find_elements(By.XPATH, "./*")
+        headers.pop()
 
         # First, get the text for the headers up to the 'more'. (Not all headers are visible immediately)
         # if the count is lower than current visible headers, this is sliced at the bottom
@@ -139,6 +138,7 @@ class AirbnbScraper:
             categories.append(header.text)
         categories.remove('More')
         categories = categories[:count]
+
 
         # Click through the visible headers to get urls for each one (except for 'More')
         counted = 0
@@ -152,12 +152,12 @@ class AirbnbScraper:
                     return zip(categories, category_links)
 
             sleep(3 if self.slow_internet_speed else 1)
-
             # Click the 'More' header and get the elements for rest of headers whilet they're visible
             if i == len(headers) - 1:
                 sleep(1.5 if self.slow_internet_speed else 0.5)
-                more_menu = header_container.find_element_by_class_name('_jvh3iol')
-                more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
+                more_menu = headers[i].find_element(By.XPATH, '//*[@id="flexible-destination-more-menu"]')
+                more_headers = more_menu.find_elements(By.XPATH, "./*")
+          
 
                 # The offset means indexing goes 0, 0, 1, 2, 3, 4,... because of the nature of the 'More' column
                 for j in range(-1,len(more_headers)-1):
@@ -165,8 +165,8 @@ class AirbnbScraper:
                         j+=1
                     # Click the 'More' header and get the elements for rest of headers whilet they're visible
                     # the difficulty with sich a dynamic page is that this has to be repeatedly done
-                    more_menu = header_container.find_element_by_class_name('_jvh3iol')
-                    more_headers = more_menu.find_elements_by_class_name('_1r9yw0q6')
+                    more_menu = headers[i].find_element(By.XPATH, '//*[@id="flexible-destination-more-menu"]')
+                    more_headers = more_menu.find_elements(By.XPATH, "./*")
                     sleep(1.5 if self.slow_internet_speed else 0.5)
                     # Get the category name from header
                     categories.append(more_headers[j].text)
@@ -217,7 +217,7 @@ class AirbnbScraper:
         """
         self.driver.get(header_url)
         sleep(1.5 if self.slow_internet_speed else 0.5)
-        self._cookie_check_and_click()
+        #self._cookie_check_and_click()
         self.driver.execute_script("document.body.style.zoom='75%'")
         sleep(5 if self.slow_internet_speed else 2)
 
@@ -225,21 +225,15 @@ class AirbnbScraper:
         if SCROLLING:
             pause_time = 7 if self.slow_internet_speed else 3.5
             self.__scroll(self.driver, pause_time)
-
         for i in range(self.BATCH_ATTEMPTS):
             try:
-                # After scrolling, Get HTML soup for whole page of 1 header
-                homePage_html = self.driver.find_element_by_xpath('//*')
-                homePage_html = homePage_html.get_attribute('innerHTML')
-                homePage_soup = BeautifulSoup(homePage_html, 'html.parser')
-
-
                 # Store all links for locations listed on page in array
-                places_container = homePage_soup.find('div', class_ = '_1teg00s')
-                places = places_container.find_all('div', class_= '_1kmzzkf')
+                places_container = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div/div/div/div/div/div/div/div[2]/div/div/div')
+                places = places_container.find_elements(By.XPATH, "./*" )
                 product_links = np.array([])
                 for place in places:
-                    url = f"https://www.airbnb.co.uk{place.a['href']}"
+                    href = place.find_element(By.TAG_NAME, 'a')
+                    url = f"{href.get_attribute('href')}"
                     product_links = np.append(product_links,url)
             except:
                 pass
@@ -251,7 +245,7 @@ class AirbnbScraper:
         # Used as boolean logic for _cookie_check_and_click()
         for i in range(10):
             try:
-                return self.driver.find_element_by_xpath("_1qbm6oii") is not None
+                return self.driver.find_element(By.XPATH, "//*[contains(text(), 'OK')]") is not None
             except:
                 pass
         return False
@@ -262,7 +256,7 @@ class AirbnbScraper:
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
         if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element_by_class_name("_1qbm6oii")
+            cookie_button= self.driver.find_element(By.XPATH,"//*[contains(text(), 'OK')]")
             cookie_button.click()
             sleep(1.5 if self.slow_internet_speed else 0.5)
             return True
@@ -357,17 +351,17 @@ class AirbnbScraper:
 
 
     def __scrape_product_images(self, driver : selenium.webdriver):
-        homePage_html = driver.find_element_by_xpath('//*')
-        homePage_html = homePage_html.get_attribute('innerHTML')
-        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-        images = homePage_soup.find_all('img', class_='_6tbg2q')
+
+        images_container = driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div[1]/div')
+        images = images_container.find_elements(By.TAG_NAME, 'img')
+
 
         if images is None:
             raise Exception
 
         sources = []
         for image in images:
-            sources.append(image['src'])
+            sources.append(image.get_attribute('src'))
         
         return sources
             
@@ -395,12 +389,7 @@ class AirbnbScraper:
             A tuple of source links for the images found on Airbnb's website. These can be transformed into image files.
 
         """
-        self._cookie_check_and_click()
-
-
-        # Luxe category is worthless!
-        if category == 'Luxe':
-            return None, ()
+        #self._cookie_check_and_click()
 
         # Initialising default dict and adding the passed ID and 
         # category parameters
@@ -412,6 +401,7 @@ class AirbnbScraper:
         self.driver.get(product_url)
         sleep(3 if self.slow_internet_speed else 0.5)
 
+
         for i in range(self.BATCH_ATTEMPTS):
             try:
                 image_data = self.__scrape_product_images(self.driver)
@@ -422,7 +412,6 @@ class AirbnbScraper:
             except:
                 continue
 
-
         # Getting data from page. Looped through multiple attempts 
         # to allow for errors due to elements not being loaded yet
         for j in range(self.BATCH_ATTEMPTS):
@@ -431,111 +420,86 @@ class AirbnbScraper:
                 # Product title (str)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        title = homePage_soup.find('h1').text
-                        product_dict['Title'] = title
+                        title_element = self.driver.find_element(By.TAG_NAME, 'h1')
+                        title = title_element.text
+                        product_dict['Title'] = title_element.text
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Product Locaton (str)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        location = homePage_soup.find('span', {'class': '_pbq7fmm'}).text.replace(',', '')
+                        location_elem = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[1]/div[1]/div/div/div/div/section/div[2]/div[1]/span[5]/button/span')
+                        location = location_elem.text.replace(',', '')
                         product_dict['Location'] = location
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Counts for beds, bedrooms, beds and bathrooms (all int)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
+                        info_container = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div[1]/div/div/section/div/div/div/div[1]/ol' )
                         info = self.string_clean(
-                            homePage_soup.find('div', {'class': '_xcsyj0'}).next_sibling.text, 
+                            info_container.text, 
                             str_type = 'info')
                         for val in info:
                             product_dict[val[0]] = val[1]
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Number of Reviews (int)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        review_count = self.string_clean(
-                            homePage_soup.find('span', {'class': '_142pbzop'}).text, 
-                            str_type = 'review count') 
-                        product_dict['Review_Count'] = review_count
+                        review_elem = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[1]/div[1]/div/div/div/div/section/div[2]/div[1]/span[1]/span[3]/button')
+                        reviews = self.string_clean(review_elem.text, 'review count')
+                        product_dict['Review_Count'] = reviews
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Overall star rating (float)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        overall_rating = homePage_soup.find('span', {'class': '_1ne5r4rt'}).text
+                        rating_elem = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[1]/div[1]/div/div/div/div/section/div[2]/div[1]/span[1]/span[2]')
+                        overall_rating = rating_elem.text.replace('·', '')
                         product_dict['Overall_Rate'] = float(overall_rating)
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Price per night (float)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        price_pNight = homePage_soup.find('span', {'class': '_tyxjp1'}).text[1:] # Gets rid of £
-                        price_pNight = price_pNight.replace(',', '')
+                        price_elem = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[3]/div/div[2]/div/div/div[1]/div/div/div/div/div/div/div[1]/div[1]/div[1]/div/div/div/span[1]')
+                        price_pNight = price_elem.text[1:] # Gets rid of £
                         product_dict['Price_Night'] = float(price_pNight)
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Sub ratings (list of floats)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        subratings_container = homePage_soup.find('div', class_= 'ciubx2o dir dir-ltr')
-
-                        subratings = subratings_container.findChildren('div', recursive = False)
-                        for subrating in subratings:
-                            if subrating.div.div.div.text:
-                                product_dict[subrating.div.div.div.text + '_rate'] = \
-                                    float(subrating.div.div.div.nextSibling.text)
+                        subratings_container = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[4]/div/div/div/div[2]/div[2]/div/div')
+                        subratings_elements = subratings_container.find_elements(By.XPATH, "./*")
+                        for elem in subratings_elements:
+                            subrating = elem.text.split('\n')
+                            product_dict[subrating[0] + '_rate'] = subrating[1]
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # How many amneties each location has (int)
                 for i in range(self.BATCH_ATTEMPTS):
                     try:
-                        homePage_html = self.driver.find_element_by_xpath('//*')
-                        homePage_html = homePage_html.get_attribute('innerHTML')
-                        homePage_soup = BeautifulSoup(homePage_html, 'lxml')
-                        amenities_container = homePage_soup.find('div', class_ = 'b6xigss dir dir-ltr')
-                        amenities_count = self.string_clean(
-                            amenities_container.a.text, 
-                            str_type='amenities')
+                        amenities_elem = self.driver.find_element(By.XPATH, '//*[@id="site-content"]/div[5]/div/div[2]/section/div[4]/a')
+                        amenities_count = self.string_clean(amenities_elem.text, 'amenities')
                         product_dict['amenities_count'] = amenities_count
                         break
-                    except:
+                    except Exception as e:
                         continue
 
                 # Product URL (str)
@@ -545,7 +509,6 @@ class AirbnbScraper:
                 if  product_dict['Title'] == None \
                     or product_dict['Location'] == None\
                     or product_dict['url'] == None:
-                    print('test')
                     sleep(1 if self.slow_internet_speed else 0.25)
                     raise ValueError
                 else:
@@ -553,13 +516,13 @@ class AirbnbScraper:
             
             except:
                 continue
- 
+
         if message:
             if image_data:
                 print(f'Logged product "{title}" as {ID}. Images found: {len(image_data)}')
             else:
                 print(f'Logged product "{title}" as {ID}. FAILED TO SAVE IMAGES.')
-
+        
         return product_dict, image_data
 
 
@@ -591,7 +554,7 @@ class AirbnbScraper:
 
         # Establishing parameters to the called functions that are dependant on the boolean condition of sample
         scroll = not sample
-        to_count = 1 if sample else 25
+        to_count = 2 if sample else 25
 
         try: 
             # Getting the zipped object of header names and urls
@@ -621,22 +584,3 @@ class AirbnbScraper:
             self.driver.quit()
             return df, image_dict
 
-
-# test shit. get rid when uploading to pypi
-def main():
-    scraper = AirbnbScraper(slow_internet_speed=False, config = 'default', messages=False)
-    scraper.get_categories()
-
-
-if __name__ == '__main__':
-    main()
-
-
-#########################
-# TO DO LIST:
-    # Change all findbys to latest syntax and also something other than class names. Something that is less high maintenance with updates.
-    # This will involve updating selenium dependency on setup.py to > =4.1.0
-
-    # Branch to other websites, create new classes for them.
-    # thread
-    # proxies.....?

@@ -1,6 +1,5 @@
 """
-Utilises the powerful tools of Selenium and BeautifulSoup4 to safely navigate and collect data from website, 
-without the use of an API.
+Utilises the powerful tools of Selenium to safely navigate and collect data from websites without the use of an API.
 """
 import selenium
 from selenium import webdriver
@@ -235,33 +234,24 @@ class AirbnbScraper:
                     href = place.find_element(By.TAG_NAME, 'a')
                     url = f"{href.get_attribute('href')}"
                     product_links = np.append(product_links,url)
-            except:
+            except Exception as e:
                 pass
         return product_links
-
-
-    def __is_cookie_button_present(self):
-        # Returns true if cookie button is present, otherwise False
-        # Used as boolean logic for _cookie_check_and_click()
-        for i in range(10):
-            try:
-                return self.driver.find_element(By.XPATH, "//*[contains(text(), 'OK')]") is not None
-            except:
-                pass
-        return False
 
 
     def _cookie_check_and_click(self):
         # Checks if a cookie button is present using the method __is_cookie_button_present()
         # if there is one present, selenium driver will find and click it, else nothing happens
         # (no error can be thrown either way, and this covers the base of possible cookie problems)
-        if self.__is_cookie_button_present():
-            cookie_button= self.driver.find_element(By.XPATH,"//*[contains(text(), 'OK')]")
-            cookie_button.click()
-            sleep(1.5 if self.slow_internet_speed else 0.5)
-            return True
-        else:
-            return False
+        try:
+            all_buttons = self.driver.find_elements(By.TAG_NAME, 'button')
+            for button in all_buttons:
+                if button.find_element(By.XPATH, )
+
+
+        except Exception as e:
+            print(e)
+            pass
 
     @staticmethod 
     def string_clean(text: str, str_type : str) -> str:
@@ -389,7 +379,8 @@ class AirbnbScraper:
             A tuple of source links for the images found on Airbnb's website. These can be transformed into image files.
 
         """
-        #self._cookie_check_and_click()
+        
+        self._cookie_check_and_click()
 
         # Initialising default dict and adding the passed ID and 
         # category parameters
@@ -409,7 +400,7 @@ class AirbnbScraper:
                     break
                 else:
                     raise Exception
-            except:
+            except Exception as e:
                 continue
 
         # Getting data from page. Looped through multiple attempts 
@@ -514,7 +505,7 @@ class AirbnbScraper:
                 else:
                     break
             
-            except:
+            except Exception as e:
                 continue
 
         if message:
@@ -584,3 +575,7 @@ class AirbnbScraper:
             self.driver.quit()
             return df, image_dict
 
+
+scraper = AirbnbScraper()
+x = scraper.scrape_product_data('https://www.airbnb.co.uk/rooms/51345704?category_tag=Tag%3A8159&adults=1&check_in=2022-01-28&check_out=2022-02-04&previous_page_section_name=1000&federated_search_id=f6fa0125-ae3e-45f1-8671-8b17ba8406fb&guests=1'
+    ,10,'TEST')

@@ -607,7 +607,10 @@ if __name__ == '__main__':
 
 #########################
 # TO DO LIST:
+
+
     # do potential errors need better handling? something for messages
+        
     # thread
     # proxies.....?
     # sort out why cookie function is fucked

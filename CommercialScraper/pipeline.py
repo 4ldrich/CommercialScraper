@@ -588,4 +588,15 @@ class AirbnbScraper:
 
 
 scraper = AirbnbScraper()
-x = scraper.scrape_all(True)
+x = scraper.scrape_product_data('https://www.airbnb.co.uk/rooms/51345704?category_tag=Tag%3A8159&adults=1&check_in=2022-01-28&check_out=2022-02-04&previous_page_section_name=1000&federated_search_id=f6fa0125-ae3e-45f1-8671-8b17ba8406fb&guests=1'
+    ,1000,'test')
+
+
+### TO DO LIST:
+
+    # Fix cookie function, make it workable anywhere. If you have to, use the class name.
+    # Turn sleeps into selenium waits
+    # Merge into main. Then re upload to pypi, and refresh github. Delete all other branches, etc.
+
+    # Optional: threading headless, 
+        # each thread with different proxy

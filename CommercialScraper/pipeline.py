@@ -571,13 +571,3 @@ class AirbnbScraper:
             except Exception as e:
                 pass
 
-
-
-### TO DO LIST:
-
-    # Fix cookie function, make it workable anywhere. If you have to, use the class name.
-    # Turn sleeps into selenium waits
-    # Merge into main. Then re upload to pypi, and refresh github. Delete all other branches, etc.
-
-    # Optional: threading headless, 
-        # each thread with different proxy

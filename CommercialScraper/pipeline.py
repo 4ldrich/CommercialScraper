@@ -1,9 +1,11 @@
 """
 Utilises the powerful tools of Selenium to safely navigate and collect data from websites without the use of an API.
 """
-import selenium
+from typing import Tuple
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import numpy as np
 import pandas as pd
 from time import sleep
@@ -56,7 +58,7 @@ class AirbnbScraper:
         self.driver = None
         self.BATCH_ATTEMPTS = 50 if self.slow_internet_speed else 25
         self.messages = messages
-        self._cookie_class_name = None
+        self.COOKIE_CLICKED = False
 
         # Initialising the selenium webdriver
         options = webdriver.ChromeOptions()
@@ -181,7 +183,7 @@ class AirbnbScraper:
                         return zip(categories, category_links)
 
 
-    def __scroll(self, driver : selenium.webdriver, SCROLL_PAUSE_TIME : int):
+    def __scroll(self, driver : webdriver, SCROLL_PAUSE_TIME : int):
         # Get scroll height
         last_height = driver.execute_script("return document.body.scrollHeight")
         while True:
@@ -327,7 +329,7 @@ class AirbnbScraper:
             raise ValueError('Please specify a distinct part of the page to clean. Have you checked your spelling?')
 
 
-    def __scrape_product_images(self, driver : selenium.webdriver):
+    def __scrape_product_images(self, driver : webdriver):
 
         images_container = driver.find_element(By.XPATH, '//*[@id="site-content"]/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div[1]/div')
         images = images_container.find_elements(By.TAG_NAME, 'img')
@@ -564,10 +566,62 @@ class AirbnbScraper:
 
 
     def _cookie_check_and_click(self):
-        for i in range(self.BATCH_ATTEMPTS):
-            try:
-                cookie_button = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div[2]/section/div[2]/div[2]/button') 
-                cookie_button.click()
-            except Exception as e:
-                pass
+        if self.COOKIE_CLICKED:
+            return
+        else:
+            for i in range(self.BATCH_ATTEMPTS):
+                try:
+                    cookie_button = self.driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div[1]/div/div[2]/section/div[2]/div[2]/button') 
+                    cookie_button.click()
+                    self.COOKIE_CLICKED = True
+                    return
+                except Exception as e:
+                    pass
 
+
+class Yell:
+    def __init__(self,  slow_internet_speed : bool=False, config : str='default', messages : bool= False):
+
+        self.main_url = 'https://www.yell.com/'
+        self.slow_internet_speed = slow_internet_speed
+        self.driver = None
+        self.messages = messages
+        self.COOKIE_CLICKED = False
+
+        options = webdriver.ChromeOptions()
+        if config == 'default':
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            options.add_argument("--start-maximized")
+            self.driver = webdriver.Chrome(options=options)
+        elif config == 'headless':
+            options.add_argument('--no-sandbox')
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            options.add_argument('--log-level=3')
+            options.add_argument('--headless')
+            options.add_argument('--disable-gpu')
+            options.add_argument("--window-size=1920, 1200")
+            options.add_argument('--disable-dev-shm-usage')
+            self.driver = webdriver.Chrome(options=options)
+            print('Running headless scraper. Do NOT close the program or interrupt the terminal.')
+        else:
+            raise ValueError(f'Configuration option "{config}" not recognised')
+    
+    def get_categories(self, count : int):
+        # Getting the Yell url and clicking past the cookie wall
+        self.driver.get(self.main_url)
+    
+
+    def _cooie_check_and_click(self):
+        if self.COOKIE_CLICKED:
+            return
+        else:
+            pass
+
+
+def main():
+    scraper = AirbnbScraper()
+    DF, IMGS = scraper.scrape_all(True)
+    print(DF)
+
+if __name__ == '__main__':
+    main()

@@ -1,6 +1,7 @@
 """
 Utilises the powerful tools of Selenium to safely navigate and collect data from websites without the use of an API.
 """
+from doctest import Example
 from typing import Tuple
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -579,8 +580,8 @@ class AirbnbScraper:
                     pass
 
 
-class Yell:
-    def __init__(self,  slow_internet_speed : bool=False, config : str='default', messages : bool= False):
+class YellScraper:
+    def __init__(self,  slow_internet_speed : bool=False, config : str='default', messages : bool=False):
 
         self.main_url = 'https://www.yell.com/'
         self.slow_internet_speed = slow_internet_speed
@@ -605,23 +606,89 @@ class Yell:
             print('Running headless scraper. Do NOT close the program or interrupt the terminal.')
         else:
             raise ValueError(f'Configuration option "{config}" not recognised')
-    
-    def get_categories(self, count : int):
+
+
+    def get_categories(self):
         # Getting the Yell url and clicking past the cookie wall
         self.driver.get(self.main_url)
+        self._cooie_check_and_click()
+
+        category_container = self.driver.find_element(By.XPATH, '/html/body/section[1]/div/div/ul')
+        category_elements = category_container.find_elements(By.TAG_NAME, 'li')
+
+        category_links = dict()
+
+        for element in category_elements:
+            link_elem = element.find_element(By.TAG_NAME, 'a')
+            category_links[element.text] = link_elem.get_attribute('href') 
+        
+        return category_links
     
 
+    def get_locations_for_category(self, category_url : str):
+        self.driver.get(category_url)
+        self._cooie_check_and_click()
+        location_container = self.driver.find_element(By.XPATH, '/html/body/div/div/div/div/ul[1]')
+        location_elements = location_container.find_elements(By.TAG_NAME, 'li')
+
+        location_links = dict()
+
+        for element in location_elements:
+            link_elem = element.find_element(By.TAG_NAME, 'a')
+            location_links[element.text] = link_elem.get_attribute('href') 
+        
+        return location_links
+
+    
+    def get_businesses(self, location_url : str):
+        self.driver.get(location_url)
+        busineses_container = self.driver.find_element(By.XPATH, '//*[@id="rightNav"]/div[1]')
+        business_elements = busineses_container.find_elements(By.TAG_NAME, 'article')
+        business_links = []
+        for element in business_elements:
+            link = element.find_element(By.XPATH, './div[1]/div[2]/div[1]/div[1]/a')
+            business_links.append(link.get_attribute('href'))
+        return business_links
+
+
+    def scrape_business_data(self, business_url : str):
+        self.driver.get(business_url)
+        business_dict = dict()
+
+        # Business Name
+        business_dict['Name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
+
+        # Business Number
+        business_dict['Telephone'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[5]/div/div/div/span[2]')
+
+        # Full Address
+        business_dict['Full Address'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[4]/div/p/span[2]')
+
+        return business_dict
+
+
     def _cooie_check_and_click(self):
+        # If the cookie button has already been clicked, function won't execute
         if self.COOKIE_CLICKED:
             return
         else:
-            pass
+            try:
+                cookie_button = WebDriverWait(self. driver, 5 if self.slow_internet_speed is True else 2).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="CookiePolicyClose"]'))
+                )
+                cookie_button.click()
+                # Once clicked, the flag for a clicked cookie button goes to True so that function isn't executed again in the same session
+                self.COOKIE_CLICKED = True
+            finally:
+                return
 
 
 def main():
-    scraper = AirbnbScraper()
-    DF, IMGS = scraper.scrape_all(True)
-    print(DF)
+    scraper = YellScraper()
+    cats = scraper.get_categories()
+    locs = scraper.get_locations_for_category(cats['Accountants'])
+    businesses = scraper.get_businesses(locs['Aberdeen'])
+    print(businesses)
 
 if __name__ == '__main__':
     main()

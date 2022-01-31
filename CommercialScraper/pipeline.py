@@ -585,6 +585,7 @@ class YellScraper:
 
         self.main_url = 'https://www.yell.com/'
         self.slow_internet_speed = slow_internet_speed
+        self.BATCH_ATTEMPTS = 30 if self.slow_internet_speed else 10
         self.driver = None
         self.messages = messages
         self.COOKIE_CLICKED = False
@@ -640,7 +641,7 @@ class YellScraper:
         return location_links
 
     
-    def get_businesses(self, location_url : str):
+    def get_businesses_for_location(self, location_url : str):
         self.driver.get(location_url)
         busineses_container = self.driver.find_element(By.XPATH, '//*[@id="rightNav"]/div[1]')
         business_elements = busineses_container.find_elements(By.TAG_NAME, 'article')
@@ -652,20 +653,79 @@ class YellScraper:
 
 
     def scrape_business_data(self, business_url : str):
+
         self.driver.get(business_url)
         business_dict = dict()
 
+        sleep(1 if self.slow_internet_speed else 0.5)
+
         # Business Name
-        business_dict['Name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
+        for i in range(self.BATCH_ATTEMPTS):
+            try:
+                business_dict['Name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
+                break
+            except:
+                pass
 
         # Business Number
-        business_dict['Telephone'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[5]/div/div/div/span[2]')
+        for i in range(self.BATCH_ATTEMPTS):
+            try:            
+                business_dict['Telephone'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[5]/div/div/div/span[2]').text.strip()
+                break
+            except:
+                pass
 
         # Full Address
-        business_dict['Full Address'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[4]/div/p/span[2]')
+        for i in range(self.BATCH_ATTEMPTS):
+            try:              
+                business_dict['Full Address'] = self.driver.find_element(By.XPATH, '//*[@id="ad_BOB2_901738618_100040891985000020"]/section[2]/div/div[1]/div/div[4]/div/p/span[2]').text.replace(',', '')
+                # Postcode
+                business_dict['Postcode'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[4]/div/p/span[2]/span[3]').text
+                break
+            except:
+                pass
+
+        # Social Media
+        for i in range(self.BATCH_ATTEMPTS):
+            try:               
+                social_media_container = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/div[2]/div[2]/div[1]/div[7]/div/div')
+                social_accounts = social_media_container.find_elements(By.TAG_NAME, 'a')
+                for account in social_accounts:
+                    link = account.get_attribute('href')
+                    social_name = link.split('.')[1].lower()
+                    business_dict[social_name] = link
+                break
+            except:
+                pass
+        
+        # Opening Hours
+        for i in range(self.BATCH_ATTEMPTS):
+            try:             
+                hours_table = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/div[2]/div[2]/div[1]/div[4]/div/div/table')
+                day_containers = hours_table.find_elements(By.TAG_NAME, 'tr')
+                for day in day_containers:
+                    info = day.find_elements(By.TAG_NAME, 'td')
+                    business_dict[info[0].text + ' opening'] = info[1].text 
+                break
+            except:
+                pass
+        
+        # Website
+        for i in range(self.BATCH_ATTEMPTS):
+            try:
+                website_container = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[6]/nav/a[1]')
+                website = website_container.get_attribute('href')
+                business_dict['Website'] = website
+                break
+            except:
+                pass
 
         return business_dict
 
+   
+    # TODO
+    def scrape_all(self):
+        pass
 
     def _cooie_check_and_click(self):
         # If the cookie button has already been clicked, function won't execute
@@ -683,12 +743,20 @@ class YellScraper:
                 return
 
 
+
 def main():
     scraper = YellScraper()
-    cats = scraper.get_categories()
-    locs = scraper.get_locations_for_category(cats['Accountants'])
-    businesses = scraper.get_businesses(locs['Aberdeen'])
-    print(businesses)
+    business = scraper.scrape_business_data('https://www.yell.com/biz/global-accounting-harrow-901738618/')
+    print(business)
 
 if __name__ == '__main__':
     main()
+
+
+################ TO DO LIST
+    #Xpaths seem to have unique ID's, try the full xpaths instead
+    # Get scrape all to work
+    # Get messages to print
+    
+    # Get it to thread
+    # Get to rotate proxies

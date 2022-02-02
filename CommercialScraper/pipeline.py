@@ -527,8 +527,7 @@ class AirbnbScraper:
             Image data is stored in a dictionary of corresponding product IDs as keys, and tuples of source links for each product as the values.
 
         """
-        # Primary key, pandas dataframe and a missing data count initialised
-        #ID = 1000
+        # Pandas dataframe and a missing data count initialised
         df = pd.DataFrame()
         image_dict = dict()
 
@@ -609,34 +608,44 @@ class YellScraper:
             raise ValueError(f'Configuration option "{config}" not recognised')
 
 
-    def get_categories(self):
+    def get_categories(self, limiter : int = None):
         # Getting the Yell url and clicking past the cookie wall
         self.driver.get(self.main_url)
-        self._cooie_check_and_click()
+        self._cookie_check_and_click()
 
         category_container = self.driver.find_element(By.XPATH, '/html/body/section[1]/div/div/ul')
         category_elements = category_container.find_elements(By.TAG_NAME, 'li')
 
         category_links = dict()
 
+        count = 0
         for element in category_elements:
             link_elem = element.find_element(By.TAG_NAME, 'a')
             category_links[element.text] = link_elem.get_attribute('href') 
-        
+            count +=1
+            if limiter:
+                if count == limiter:
+                    return category_links
+
         return category_links
     
 
-    def get_locations_for_category(self, category_url : str):
+    def get_locations_for_category(self, category_url : str, limiter : int = None):
         self.driver.get(category_url)
-        self._cooie_check_and_click()
+        self._cookie_check_and_click()
         location_container = self.driver.find_element(By.XPATH, '/html/body/div/div/div/div/ul[1]')
         location_elements = location_container.find_elements(By.TAG_NAME, 'li')
 
         location_links = dict()
 
+        count = 0
         for element in location_elements:
             link_elem = element.find_element(By.TAG_NAME, 'a')
             location_links[element.text] = link_elem.get_attribute('href') 
+            count += 1
+            if limiter:
+                if count == limiter:
+                    return location_links
         
         return location_links
 
@@ -652,10 +661,15 @@ class YellScraper:
         return business_links
 
 
-    def scrape_business_data(self, business_url : str):
+    # TODO Make a more sophisticated social media name parser from link
+    def scrape_business_data(self, business_url : str, location : str, category : str, id: str):
 
         self.driver.get(business_url)
         business_dict = dict()
+
+        business_dict['ID'] = id
+        business_dict['City'] = location
+        business_dict['Business Category'] = category
 
         sleep(1 if self.slow_internet_speed else 0.5)
 
@@ -664,70 +678,98 @@ class YellScraper:
             try:
                 business_dict['Name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
                 break
-            except:
+            except Exception as e:
                 pass
 
         # Business Number
         for i in range(self.BATCH_ATTEMPTS):
             try:            
-                business_dict['Telephone'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[5]/div/div/div/span[2]').text.strip()
+                business_dict['Telephone'] = self.driver.find_element(By.XPATH, '//span[@class="business--telephoneNumber"]').text.strip()
                 break
-            except:
+            except Exception as e:
                 pass
 
         # Full Address
         for i in range(self.BATCH_ATTEMPTS):
-            try:              
-                business_dict['Full Address'] = self.driver.find_element(By.XPATH, '//*[@id="ad_BOB2_901738618_100040891985000020"]/section[2]/div/div[1]/div/div[4]/div/p/span[2]').text.replace(',', '')
+            try:  
+                addr = self.driver.find_element(By.XPATH, '//span[@class="address"]')            
+                business_dict['Full Address'] = addr.text.replace(',', '')
                 # Postcode
-                business_dict['Postcode'] = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[4]/div/p/span[2]/span[3]').text
+                business_dict['Postcode'] = addr.find_element(By.XPATH, '//span[@itemprop="postalCode"]').text
                 break
-            except:
+            except Exception as e:
                 pass
 
-        # Social Media
+        # Social Media - xpaths are different for different pages
         for i in range(self.BATCH_ATTEMPTS):
             try:               
-                social_media_container = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/div[2]/div[2]/div[1]/div[7]/div/div')
-                social_accounts = social_media_container.find_elements(By.TAG_NAME, 'a')
-                for account in social_accounts:
-                    link = account.get_attribute('href')
-                    social_name = link.split('.')[1].lower()
-                    business_dict[social_name] = link
+                side_boxes = self.driver.find_elements(By.XPATH, '//div[@class="sidebar--section"]')
+                for box in side_boxes:
+                    if 'Find us on' in box.text:
+                        social_accounts = box.find_elements(By.TAG_NAME, 'a')
+                        for account in social_accounts:
+                            link = account.get_attribute('href')
+                            social_name = link.split('.')[1].lower()
+                            business_dict[social_name] = link
                 break
-            except:
+            except Exception as e:
+                print(e)
                 pass
         
-        # Opening Hours
+        # Opening Hours 
         for i in range(self.BATCH_ATTEMPTS):
             try:             
-                hours_table = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/div[2]/div[2]/div[1]/div[4]/div/div/table')
+                hours_table = self.driver.find_element(By.XPATH, '//table[@class="openingHours"]')
                 day_containers = hours_table.find_elements(By.TAG_NAME, 'tr')
                 for day in day_containers:
                     info = day.find_elements(By.TAG_NAME, 'td')
                     business_dict[info[0].text + ' opening'] = info[1].text 
                 break
-            except:
+            except Exception as e:
                 pass
         
-        # Website
+        # Yellow Boxes part - Website, Email, maybe others
         for i in range(self.BATCH_ATTEMPTS):
             try:
-                website_container = self.driver.find_element(By.XPATH, '//*[@id="ad_LSL5_641811_100040483185000030"]/section[2]/div/div[1]/div[2]/div[6]/nav/a[1]')
-                website = website_container.get_attribute('href')
-                business_dict['Website'] = website
+                yellow_box_container = self.driver.find_element(By.XPATH, '//nav[@class="col-sm-24 businessCard--callToActions"]')
+                yellow_boxes = yellow_box_container.find_elements(By.TAG_NAME, 'a')
+                for box in yellow_boxes:
+                    try:
+                        business_dict[box.text] = box.get_attribute('href')
+                    except Exception as e:
+                        print(e)
+                        pass
                 break
-            except:
+            except Exception as e:
                 pass
 
         return business_dict
 
    
-    # TODO
-    def scrape_all(self):
-        pass
+    # TODO yell picks up on bot pretty quickly. Get around this 
+    def scrape_all(self, sample : bool = False):
 
-    def _cooie_check_and_click(self):
+        df = pd.DataFrame()
+
+        sample=True
+        category_links = self.get_categories(1 if sample else None)
+        try:
+
+            for category_name, category_url in category_links.items():
+                category_locations = self.get_locations_for_category(category_url, 2 if sample else None)
+
+                for location_name, location_url in category_locations.items():
+                    businesses_for_location = self.get_businesses_for_location(location_url)
+                    for business_url in businesses_for_location:
+                        ID = uuid.uuid4()
+                        business_dict = self.scrape_business_data(business_url, location=location_name, category=category_name, id = ID)
+                        df = df.append(business_dict, ignore_index=True)
+
+        finally:
+            return df
+
+
+    def _cookie_check_and_click(self):
         # If the cookie button has already been clicked, function won't execute
         if self.COOKIE_CLICKED:
             return
@@ -743,20 +785,20 @@ class YellScraper:
                 return
 
 
-
+# Trying scrape all here
 def main():
     scraper = YellScraper()
-    business = scraper.scrape_business_data('https://www.yell.com/biz/global-accounting-harrow-901738618/')
-    print(business)
+    df = scraper.scrape_all(True)
+    print(df)
 
 if __name__ == '__main__':
     main()
 
 
 ################ TO DO LIST
-    #Xpaths seem to have unique ID's, try the full xpaths instead
-    # Get scrape all to work
-    # Get messages to print
+
+    # Get messages to print for headless mode
+    # yell picks up on bot pretty quickly. Get around this  -- proxies...?
     
     # Get it to thread
     # Get to rotate proxies

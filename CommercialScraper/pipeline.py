@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 from time import sleep
 import uuid
+import warnings
+warnings.filterwarnings('ignore')
 import data_processing
 
 class AirbnbScraper:
@@ -348,7 +350,7 @@ class AirbnbScraper:
             
 
     def scrape_product_data(self, product_url: str, ID : uuid.uuid4, category : str, message : bool=False):
-        """Gets a page of an Airbnb product and scrapes structured and unstructured data. Utilises both Selenium and BeautifulSoup.
+        """Gets a page of an Airbnb product and scrapes structured and unstructured data.
 
         Parameters
         ----------
@@ -582,6 +584,46 @@ class AirbnbScraper:
 
 class YellScraper:
     def __init__(self,  slow_internet_speed : bool=False, config : str='default', messages : bool=False):
+        """A Webscraper that crawls through Yell's website and gathers structured data about local businesses.
+
+        When an instance of YellScraper is initialized, a Selenium Webdriver gets the homepage by use
+        of the `url` attribute. Then it clicks past the cookie wall (if applicable), and navigates onto
+        the main products hub.
+
+        Parameters
+        ----------
+        slow_internet_speed : bool, default=False
+            The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
+            particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
+            allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
+            scraper `scrape_all()` with `slow_internet_speed` enabled.
+        config : str, defualt = 'default'
+            Option to confiigure the selenium webdriver to operate in 'headless' mode or 'default' mode.
+        messages : bool, default=False
+            Option to activate messages of each successful item saved by the scraper, and any errors if applied.
+
+        Attributes
+        ----------
+        BATCH_ATTEMPTS : int
+            It is common that a Scraper can fail to find an element on a webpage for numerous reasons,
+            for example that the element hasn't been loaded yet. `BATCH_ATTEMPTS` allows for this and 
+            offers up to 25 attempts for the Scraper to locate and pull data from each element it is looking 
+            for, until the Scraper assumes that the element doesn't exist in the particular page. If 
+            `slow_internet_speed` is enabled, the attempts limit is increased to 50.
+        main_url : str
+            The URL for Yell's home page, provided for the Selenium webdriver to get upon initialization
+            of the Scraper object.
+        driver : Selenium Webdriver
+            The webdriver that is utilized to crawl through Yell's website
+        slow_internet_speed : bool
+            The crawler is designed to allow for lag whilst loading elements on a page, but users with a 
+            particularly slow internet speed may cause the crawler to miss elements. A `slow_internet_speed` flag
+            allows those users to still enjoy the potential of the scraper. It is not recommended to run the full
+            scraper `scrape_all()` with `slow_internet_speed` enabled. 
+        messages : bool
+            Option to activate messages of each successful item saved by the scraper, and any errors if applied.
+
+        """
 
         self.main_url = 'https://www.yell.com/'
         self.slow_internet_speed = slow_internet_speed
@@ -610,6 +652,30 @@ class YellScraper:
 
 
     def get_categories(self, limiter : int = None):
+        """Gets business category names and corresponding urls for each product header in Yell's main products page. 
+        
+        This method first clicks past a cookie wall if applicable. Using the `driver` that has been initialised
+        with the Scraper object, this method located through and clicks each header button in the top menu bar of 
+        the main products page. When each header is clicked, the category name and the current url of that clicked 
+        header are stored into a dictionary. 
+
+        Parameters
+        ----------
+        limiter : int , optional , default = `None`
+            When specified, the `limiter` parameter will set a limit to the number of categories that are picked up by the scraper.
+            Defaulted to None, and when it is None, all categories will be picked up.
+        
+        Returns
+        -------
+        category links : dictionary of { str : str}
+            Dictionary object of the business category name and respective url
+
+        Raises
+        ------
+        ValueError
+            If the limit parameter is 0 or negative
+        
+        """
         # Getting the Yell url and clicking past the cookie wall
         self.driver.get(self.main_url)
         self._cookie_check_and_click()
@@ -618,6 +684,9 @@ class YellScraper:
         category_elements = category_container.find_elements(By.TAG_NAME, 'li')
 
         category_links = dict()
+
+        if limiter <= 0:
+            raise ValueError('Limiter must be a positive integer')
 
         count = 0
         for element in category_elements:
@@ -631,7 +700,7 @@ class YellScraper:
         return category_links
     
 
-    def get_locations_for_category(self, category_url : str, limiter : int = None):
+    def _get_locations_for_categoryyy(self, category_url : str, limiter : int = None):
         self.driver.get(category_url)
         self._cookie_check_and_click()
         location_container = self.driver.find_element(By.XPATH, '/html/body/div/div/div/div/ul[1]')
@@ -651,7 +720,7 @@ class YellScraper:
         return location_links
 
     
-    def get_businesses_for_location(self, location_url : str):
+    def _get_businesses_for_location(self, location_url : str):
         self.driver.get(location_url)
         busineses_container = self.driver.find_element(By.XPATH, '//*[@id="rightNav"]/div[1]')
         business_elements = busineses_container.find_elements(By.TAG_NAME, 'article')
@@ -662,9 +731,30 @@ class YellScraper:
         return business_links
 
 
-    # TODO Make a more sophisticated social media name parser from link
-    def scrape_business_data(self, business_url : str, location : str, category : str, ID: str, message : bool = False):
 
+    def scrape_business_data(self, business_url : str, location : str, category : str, ID: str, message : bool = False):
+        """Gets a page of an Yell business and scrapes structured data.
+
+        Parameters
+        ----------
+        business_url : str
+            The url of the page to be scraped
+        location : str
+            Location of the Business, a value to be entered into the returning dictionary
+        ID : int
+            The unique ID assigned to the particular business. This will be used to identify the data in a database/data lake.
+        category : str
+            The category name corresponding to where a business is found. This can be read on the headers tab on Airbnb's website.
+        message : bool, default=False
+            With the `message` flag enabled, the business scrape status will be logged to the terminal, as well as whether any
+            images were saved.
+
+        Returns
+        -------
+        business_dict : dict of {str : any}
+            Structured data stored in the form of a dictionary containing relevant and human readable information about the business. 
+
+        """     
         self.driver.get(business_url)
         business_dict = dict()
 
@@ -751,10 +841,22 @@ class YellScraper:
 
         return business_dict
 
-   
-    # TODO yell picks up on bot pretty quickly. Get around this 
-    def scrape_all(self, sample : bool = False):
 
+    def scrape_all(self, sample : bool = False):
+        """Utilises the powerful library of Selenium as well as the methods of this class to scrape multiple businesses from Yell's page.
+
+        Parameters
+        ----------
+        sample : bool, default=True
+            The `sample` logic, when set to true, severely restricts the number of businesses that the crawler will try to scrape, 
+            in the event that one simply wishes to only scrape a few businesses, or quickly test that the crawler is functioning.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            The pandas dataframe containing all of the information for each product scraped in a neat and structured fashion.
+
+        """
         df = pd.DataFrame()
 
         sample=True
@@ -762,10 +864,10 @@ class YellScraper:
         try:
 
             for category_name, category_url in category_links.items():
-                category_locations = self.get_locations_for_category(category_url, 2 if sample else None)
+                category_locations = self._get_locations_for_categoryyy(category_url, 2 if sample else None)
 
                 for location_name, location_url in category_locations.items():
-                    businesses_for_location = self.get_businesses_for_location(location_url)
+                    businesses_for_location = self._get_businesses_for_location(location_url)
                     for business_url in businesses_for_location:
                         ID = uuid.uuid4()
                         business_dict = self.scrape_business_data(business_url, location=location_name, category=category_name, id = ID)
@@ -794,24 +896,3 @@ class YellScraper:
                 return
 
 
-# Trying scrape all here
-def main():
-    scraper = YellScraper()
-    df = scraper.scrape_all(True)
-    data_processing.df_to_csv(df, 'test')
-    
-    
-
-if __name__ == '__main__':
-    main()
-
-
-
-################ TO DO LIST
-
-    # Get messages to print for headless mode
-    # yell picks up on bot pretty quickly. Get around this 
-    
-    # Get it to thread
-    # Get to rotate proxies     
-        # User agent spoofing

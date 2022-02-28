@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from time import sleep
 import uuid
+import data_processing
 
 class AirbnbScraper:
     def __init__(self, slow_internet_speed : bool=False, config : str='default', messages : bool=False):
@@ -662,12 +663,12 @@ class YellScraper:
 
 
     # TODO Make a more sophisticated social media name parser from link
-    def scrape_business_data(self, business_url : str, location : str, category : str, id: str):
+    def scrape_business_data(self, business_url : str, location : str, category : str, ID: str, message : bool = False):
 
         self.driver.get(business_url)
         business_dict = dict()
 
-        business_dict['ID'] = id
+        business_dict['ID'] = ID
         business_dict['City'] = location
         business_dict['Business Category'] = category
 
@@ -676,7 +677,8 @@ class YellScraper:
         # Business Name
         for i in range(self.BATCH_ATTEMPTS):
             try:
-                business_dict['Name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
+                name = self.driver.find_element(By.TAG_NAME, 'h1').text
+                business_dict['Name'] = name
                 break
             except Exception as e:
                 pass
@@ -701,20 +703,20 @@ class YellScraper:
                 pass
 
         # Social Media - xpaths are different for different pages
-        for i in range(self.BATCH_ATTEMPTS):
-            try:               
-                side_boxes = self.driver.find_elements(By.XPATH, '//div[@class="sidebar--section"]')
-                for box in side_boxes:
-                    if 'Find us on' in box.text:
-                        social_accounts = box.find_elements(By.TAG_NAME, 'a')
-                        for account in social_accounts:
-                            link = account.get_attribute('href')
-                            social_name = link.split('.')[1].lower()
-                            business_dict[social_name] = link
-                break
-            except Exception as e:
-                print(e)
-                pass
+        # for i in range(self.BATCH_ATTEMPTS):
+        #     try:               
+        #         side_boxes = self.driver.find_elements(By.XPATH, '//div[@class="sidebar--section"]')
+        #         for box in side_boxes:
+        #             if 'Find us on' in box.text:
+        #                 social_accounts = box.find_elements(By.TAG_NAME, 'a')
+        #                 for account in social_accounts:
+        #                     link = account.get_attribute('href')
+        #                     social_name = link.split('.')[1].lower()
+        #                     business_dict[social_name] = link
+        #         break
+        #     except Exception as e:
+        #         print(e)
+        #         pass
         
         # Opening Hours 
         for i in range(self.BATCH_ATTEMPTS):
@@ -742,6 +744,10 @@ class YellScraper:
                 break
             except Exception as e:
                 pass
+        
+        if message:
+            print(f'Logged product "{name}" as {ID}.')
+
 
         return business_dict
 
@@ -763,7 +769,10 @@ class YellScraper:
                     for business_url in businesses_for_location:
                         ID = uuid.uuid4()
                         business_dict = self.scrape_business_data(business_url, location=location_name, category=category_name, id = ID)
-                        df = df.append(business_dict, ignore_index=True)
+                        try:
+                            df =  df.append(business_dict, ignore_index=True)
+                        except Exception as e:
+                            print(e)
 
         finally:
             return df
@@ -789,16 +798,20 @@ class YellScraper:
 def main():
     scraper = YellScraper()
     df = scraper.scrape_all(True)
-    print(df)
+    data_processing.df_to_csv(df, 'test')
+    
+    
 
 if __name__ == '__main__':
     main()
 
 
+
 ################ TO DO LIST
 
     # Get messages to print for headless mode
-    # yell picks up on bot pretty quickly. Get around this  -- proxies...?
+    # yell picks up on bot pretty quickly. Get around this 
     
     # Get it to thread
-    # Get to rotate proxies
+    # Get to rotate proxies     
+        # User agent spoofing
